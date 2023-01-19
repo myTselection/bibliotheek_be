@@ -1,0 +1,11 @@
+{
+  "codeowners": ["@myTselection"],
+  "config_flow": true,
+  "dependencies": [],
+  "documentation": "https://github.com/myTselection/bibliotheek_be",
+  "domain": "bibliotheek_be",
+  "iot_class": "Cloud Polling",
+  "name": "Bibliotheek_be",
+  "requirements": ["beautifulsoup4", "html5lib"],
+  "version": "0.0.1"
+}
