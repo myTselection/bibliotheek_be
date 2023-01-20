@@ -8,5 +8,6 @@
   "name": "Bibliotheek_be",
   "requirements": ["beautifulsoup4", "html5lib"],
   "version": "0.0.1",
-  "documentation": "https://github.com/myTselection/bibliotheek_be/issues"
+  "documentation": "https://github.com/myTselection/bibliotheek_be/issues",
+  "integration_type": "entity"
 }
