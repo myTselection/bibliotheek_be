@@ -6,6 +6,7 @@ from datetime import date, datetime, timedelta
 from typing import List
 import requests
 from pydantic import BaseModel
+# from urlparse import urlparse
 
 import voluptuous as vol
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
@@ -48,22 +49,33 @@ class ComponentSession(object):
         self.msisdn = None
 
     def login(self, username, password):
-    # https://my.youfone.be/prov/MyYoufone/MyYOufone.Wcf/v2.0/Service.svc/json/login, POST
+    # https://bibliotheek.be/mijn-bibliotheek/aanmelden, GET
     # example payload
-    # {
-      # "request": {
-        # "Login": "sdlkfjsldkfj@gmail.com",
-        # "Password": "SDFSDFSDFSDFSDF"
-      # }
-    # }
     # example response: 
-    # {"Message":"Authorization succes","ResultCode":0,"Object":{"Customer":{"CustomerNumber":9223283432,"Email":"eslkdjflksd@gmail.com","FirstName":"slfjs","Gender":null,"Id":3434,"Initials":"I","IsBusinessCustomer":false,"Language":"nl","LastName":"DSFSDF","PhoneNumber":"0412345678","Prefix":null,"RoleId":2},"Customers":[{"CustomerId":12345,"CustomerNumber":1234567890,"IsDefaultCustomer":true,"Msisdn":32412345678,"ProvisioningTypeId":1,"RoleId":2}],"CustomersCount":1}}
+    # header: location: https://mijn.bibliotheek.be/openbibid/rest/auth/authorize?hint=login&oauth_callback=https://bibliotheek.be/my-library/login/callback&oauth_token=5abee3c0f5c04beead64d8e625ead0e7&uilang=nl
         # Get OAuth2 state / nonce
         header = {"Content-Type": "application/json"}
-        response = self.s.post("https://my.youfone.be/prov/MyYoufone/MyYOufone.Wcf/v2.0/Service.svc/json/login",data='{"request": {"Login": "'+username+'", "Password": "'+password+'"}}',headers=header,timeout=10)
-        _LOGGER.debug("bibliotheek.be login post result status code: " + str(response.status_code) + ", response: " + response.text)
-        _LOGGER.debug("bibliotheek.be login header: " + str(response.headers))
+        response = self.s.get("https://bibliotheek.be/mijn-bibliotheek/aanmelden",headers=header,timeout=10)
+        _LOGGER.info("bibliotheek.be login post result status code: " + str(response.status_code) + ", response: " + response.text)
+        _LOGGER.info("bibliotheek.be login header: " + str(response.headers))
+        oauth_location = response.headers.get('location')
+        # oauth_url_parsed = urlparse(oauth_location)
+        oauth_
+        assert response.status_code == 302
+        
+        
+        response = self.s.get(oauth_location,headers=header,timeout=10)
+        _LOGGER.info("bibliotheek.be auth get result status code: " + str(response.status_code) + ", response: " + response.text)
+        _LOGGER.info("bibliotheek.be auth get header: " + str(response.headers))
         assert response.status_code == 200
+        
+        
+        response = self.s.get('https://mijn.bibliotheek.be/openbibid/rest/auth/login',headers=header,timeout=10)
+        _LOGGER.info("bibliotheek.be auth get result status code: " + str(response.status_code) + ", response: " + response.text)
+        _LOGGER.info("bibliotheek.be auth get header: " + str(response.headers))
+        assert response.status_code == 200
+        
+        
         self.userdetails = response.json()
         self.msisdn = self.userdetails.get('Object').get('Customers')[0].get('Msisdn')
         self.s.headers["securitykey"] = response.headers.get('securitykey')
