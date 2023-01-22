@@ -41,14 +41,12 @@ async def dry_setup(hass, config_entry, async_add_devices):
         async_get_clientsession(hass),
         hass
     )
-    await componentData._init()
+    await componentData._force_update()
     assert componentData._usage_details is not None
     
-    sensorMobile = ComponentMobileSensor(componentData, hass)
-    sensors.append(sensorMobile)
+    sensorUser = ComponentUserSensor(componentData, hass)
+    sensors.append(sensorUser)
     
-    sensorInternet = ComponentInternetSensor(componentData, hass)
-    sensors.append(sensorInternet)
     
     async_add_devices(sensors)
 
@@ -88,33 +86,24 @@ class ComponentData:
         self._usage_details = None
         self._hass = hass
         self._lastupdate = None
-        self._user_details = None
+        self._oauth_token = None
         
     # same as update, but without throttle to make sure init is always executed
-    async def _init(self):
+    async def _force_update(self):
         _LOGGER.info("Fetching intit stuff for " + NAME)
         if not(self._session):
             self._session = ComponentSession()
 
         if self._session:
-            self._user_details = await self._hass.async_add_executor_job(lambda: self._session.login(self._username, self._password))
+            self._oauth_token = await self._hass.async_add_executor_job(lambda: self._session.login(self._username, self._password))
             _LOGGER.info(f"{NAME} init login completed")
-            self._usage_details = await self._hass.async_add_executor_job(lambda: self._session.usage_details())
+            # self._usage_details = await self._hass.async_add_executor_job(lambda: self._session.usage_details())
             _LOGGER.debug(f"{NAME} init usage_details data: {self._usage_details}")
             self._lastupdate = datetime.now()
                 
     @Throttle(MIN_TIME_BETWEEN_UPDATES)
     async def _update(self):
-        _LOGGER.info("Fetching intit stuff for " + NAME)
-        if not(self._session):
-            self._session = ComponentSession()
-
-        if self._session:
-            self._user_details = await self._hass.async_add_executor_job(lambda: self._session.login(self._username, self._password))
-            _LOGGER.info(f"{NAME} init login completed")
-            self._usage_details = await self._hass.async_add_executor_job(lambda: self._session.usage_details())
-            _LOGGER.debug(f"{NAME} init usage_details data: {self._usage_details}")
-            self._lastupdate = datetime.now()
+        await self._force_update()
 
     async def update(self):
         await self._update()
@@ -124,7 +113,7 @@ class ComponentData:
 
 
 
-class ComponentMobileSensor(Entity):
+class ComponentUserSensor(Entity):
     def __init__(self, data, hass):
         self._data = data
         self._hass = hass
@@ -147,7 +136,6 @@ class ComponentMobileSensor(Entity):
         await self._data.update()
         self._last_update =  self._data._lastupdate;
         
-        self._phonenumber = self._data._user_details.get('Object').get('Customer').get('PhoneNumber')
         self._period_start_date = self._data._usage_details.get('Object')[2].get('Properties')[0].get('Value')
         self._period_left = self._data._usage_details.get('Object')[2].get('Properties')[1].get('Value')
         
@@ -186,7 +174,6 @@ class ComponentMobileSensor(Entity):
         return {
             ATTR_ATTRIBUTION: NAME,
             "last update": self._last_update,
-            "phone_number": self._phonenumber,
             "used_percentage": self._used_percentage,
             "total_volume": self._total_volume,
             "includedvolume_usage": self._includedvolume_usage,
@@ -196,100 +183,6 @@ class ComponentMobileSensor(Entity):
             "extra_costs": self._extracosts,
             "usage_details_json": self._data._usage_details,
             "user_details_json": self._data._user_details
-        }
-
-    @property
-    def device_info(self) -> dict:
-        """I can't remember why this was needed :D"""
-        return {
-            "identifiers": {(DOMAIN, self.unique_id)},
-            "name": self.name,
-            "manufacturer": DOMAIN,
-        }
-
-    @property
-    def unit(self) -> int:
-        """Unit"""
-        return int
-
-    @property
-    def unit_of_measurement(self) -> str:
-        """Return the unit of measurement this sensor expresses itself in."""
-        return "%"
-
-    @property
-    def friendly_name(self) -> str:
-        return self.unique_id
-        
-
-class ComponentInternetSensor(Entity):
-    def __init__(self, data, hass):
-        self._data = data
-        self._hass = hass
-        self._last_update = None
-        self._period_start_date = None
-        self._period_left = None
-        self._total_volume = None
-        self._isunlimited = None
-        self._used_percentage = None
-        self._phonenumber = None
-        self._includedvolume_usage = None
-
-    @property
-    def state(self):
-        """Return the state of the sensor."""
-        return self._used_percentage
-
-    async def async_update(self):
-        await self._data.update()
-        self._last_update =  self._data._lastupdate;
-        self._phonenumber = self._data._user_details.get('Object').get('Customer').get('PhoneNumber')
-        
-        self._period_start_date = self._data._usage_details.get('Object')[2].get('Properties')[0].get('Value')
-        self._period_left = self._data._usage_details.get('Object')[2].get('Properties')[1].get('Value')
-        
-        self._includedvolume_usage = self._data._usage_details.get('Object')[0].get('Properties')[0].get('Value')
-        self._total_volume = self._data._usage_details.get('Object')[0].get('Properties')[1].get('Value')
-        self._used_percentage = self._data._usage_details.get('Object')[0].get('Properties')[2].get('Value')
-        self._isunlimited = self._data._usage_details.get('Object')[0].get('Properties')[3].get('Value')
-            
-        
-    async def async_will_remove_from_hass(self):
-        """Clean up after entity before removal."""
-        _LOGGER.info("async_will_remove_from_hass " + NAME)
-        self._data.clear_session()
-
-
-    @property
-    def icon(self) -> str:
-        """Shows the correct icon for container."""
-        return "mdi:web"
-        
-    @property
-    def unique_id(self) -> str:
-        """Return the name of the sensor."""
-        return (
-            NAME + " internet"
-        )
-
-    @property
-    def name(self) -> str:
-        return self.unique_id
-
-    @property
-    def extra_state_attributes(self) -> dict:
-        """Return the state attributes."""
-        return {
-            ATTR_ATTRIBUTION: NAME,
-            "last update": self._last_update,
-            "phone_number": self._phonenumber,
-            "used_percentage": self._used_percentage,
-            "total_volume": self._total_volume,
-            "includedvolume_usage": self._includedvolume_usage,
-            "unlimited": self._isunlimited,
-            "period_start": self._period_start_date,
-            "period_days_left": self._period_left,
-            "usage_details_json": self._data._usage_details
         }
 
     @property

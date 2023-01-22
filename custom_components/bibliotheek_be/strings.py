@@ -3,7 +3,6 @@
         "title": "Bibliotheek.be",
         "step": {
             "user": {
-                "title": "Bibliotheek.be",
                 "description": "Setup a Bibliotheek.be sensor, username and password are required.",
                 "data": {
                     "username": "Username",
@@ -11,7 +10,6 @@
                 }
             },
             "edit": {
-                "title": "Bibliotheek.be",
                 "description": "Setup a Bibliotheek.be sensor, username and password are required.",
                 "data": {
                     "username": "Username",
@@ -30,7 +28,6 @@
     "options": {
         "step": {
             "edit": {
-                "title": "Bibliotheek.be",
                 "description": "Setup a Bibliotheek.be sensor, username and password are required.",
                 "data": {
                     "username": "Username",

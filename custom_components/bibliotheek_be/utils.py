@@ -6,7 +6,7 @@ from datetime import date, datetime, timedelta
 from typing import List
 import requests
 from pydantic import BaseModel
-# from urlparse import urlparse
+from urllib.parse import urlsplit, parse_qs
 
 import voluptuous as vol
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
@@ -20,23 +20,11 @@ def check_settings(config, hass):
         _LOGGER.error("username was not set")
     else:
         return True
+        
     if not config.get("password"):
         _LOGGER.error("password was not set")
     else:
         return True
-    if not config.get("data"):
-        _LOGGER.error("data bool was not set")
-    else:
-        return True
-    if not config.get("mobile"):
-        _LOGGER.error("mobile bool was not set")
-    else:
-        return True
-        
-    if config.get("data") and config.get("mobile"):
-        return True
-    else:
-        _LOGGER.error("At least one of data or mobile is to be set")
 
     raise vol.Invalid("Missing settings to setup the sensor.")
 
@@ -56,37 +44,62 @@ class ComponentSession(object):
         # Get OAuth2 state / nonce
         header = {"Content-Type": "application/json"}
         response = self.s.get("https://bibliotheek.be/mijn-bibliotheek/aanmelden",headers=header,timeout=10)
-        _LOGGER.info("bibliotheek.be login post result status code: " + str(response.status_code) + ", response: " + response.text)
-        _LOGGER.info("bibliotheek.be login header: " + str(response.headers))
+        _LOGGER.info(f"bibliotheek.be login post result status code: {response.status_code}, response: {response.text}")
+        _LOGGER.info(f"bibliotheek.be login header: {response.headers}")
         oauth_location = response.headers.get('location')
-        # oauth_url_parsed = urlparse(oauth_location)
-        oauth_
+        oauth_locatonurl_parsed = urlsplit(oauth_location)
+        query_params = parse_qs(oauth_locatonurl_parsed.query)
+        oauth_callback_url = query_params.get('oauth_callback')
+        oauth_token = query_params.get('oauth_token')
+        hint = query_params.get('hint')
+        _LOGGER.info(f"bibliotheek.be url params parsed: oauth_callback_url: {oauth_callback_url}, oauth_token: {oauth_token}, hint: {hint}")
         assert response.status_code == 302
         
         
+        #authorize based on url in location of response received
         response = self.s.get(oauth_location,headers=header,timeout=10)
-        _LOGGER.info("bibliotheek.be auth get result status code: " + str(response.status_code) + ", response: " + response.text)
-        _LOGGER.info("bibliotheek.be auth get header: " + str(response.headers))
+        _LOGGER.info(f"bibliotheek.be auth get result status code: {response.status_code}, response: {response.text}")
+        _LOGGER.info(f"bibliotheek.be auth get header: {response.headers}")
         assert response.status_code == 200
         
+        data = f"hint={hint}&token={oauth_token}&callback=https%3A%2F%2Fbibliotheek.be%2Fmy-library%2Flogin%2Fcallback&email={username}&password={password}"
+        #login
+        #example header response: https://bibliotheek.be/my-library/login/callback?oauth_token=f68491752279e1a5c0a4ee9b6a349836&oauth_verifier=d369ffff4a5c4a05&uilang=nl
+        response = self.s.post('https://mijn.bibliotheek.be/openbibid/rest/auth/login',headers=header,data=data,timeout=10)
+        _LOGGER.info(f"bibliotheek.be login get result status code: {response.status_code}, response: {response.text}")
+        _LOGGER.info(f"bibliotheek.be login get header: {response.headers}")
+        login_location = response.headers.get('location')
+        login_locatonurl_parsed = urlsplit(login_location)
+        login_query_params = parse_qs(login_locatonurl_parsed.query)
+        oauth_verifier = login_query_params.get('oauth_verifier')
+        oauth_token = query_params.get('oauth_token')
+        hint = query_params.get('hint')
+        _LOGGER.info(f"bibliotheek.be url params parsed: oauth_callback_url: {oauth_callback_url}, oauth_token: {oauth_token}, hint: {hint}")
+        assert response.status_code == 303
         
-        response = self.s.get('https://mijn.bibliotheek.be/openbibid/rest/auth/login',headers=header,timeout=10)
-        _LOGGER.info("bibliotheek.be auth get result status code: " + str(response.status_code) + ", response: " + response.text)
-        _LOGGER.info("bibliotheek.be auth get header: " + str(response.headers))
+        #login callback based on url in location of response received
+        response = self.s.get(login_location,headers=header,timeout=10)
+        login_callback_location = response.headers.get('location')
+        _LOGGER.info(f"bibliotheek.be login callback get result status code: {response.status_code}, response: {response.text}")
+        _LOGGER.info(f"bibliotheek.be login callback get header: {response.headers}")
+        assert response.status_code == 302
+        
+        
+        #lidmaatschap based on url in location of response received
+        response = self.s.get(login_callback_location,headers=header,timeout=10)
+        lidmaatschap_response_header = response.headers
+        _LOGGER.info(f"bibliotheek.be lidmaatschap get result status code: {response.status_code}, response: {response.text}")
+        _LOGGER.info(f"bibliotheek.be lidmaatschap get header: {response.headers}")
         assert response.status_code == 200
         
-        
-        self.userdetails = response.json()
-        self.msisdn = self.userdetails.get('Object').get('Customers')[0].get('Msisdn')
-        self.s.headers["securitykey"] = response.headers.get('securitykey')
-        return self.userdetails
+        return oauth_token
 
     def usage_details(self):
     # https://my.youfone.be/prov/MyYoufone/MyYOufone.Wcf/v2.0/Service.svc/json/GetOverviewMsisdnInfo
     # request.Msisdn - phonenr 
     # {"Message":null,"ResultCode":0,"Object":[{"Properties":[{"Key":"UsedAmount","Value":"0"},{"Key":"BundleDurationWithUnits","Value":"250 MB"},{"Key":"Percentage","Value":"0.00"},{"Key":"_isUnlimited","Value":"0"},{"Key":"_isExtraMbsAvailable","Value":"1"}],"SectionId":1},{"Properties":[{"Key":"UsedAmount","Value":"24"},{"Key":"BundleDurationWithUnits","Value":"200 Min"},{"Key":"Percentage","Value":"12.00"},{"Key":"_isUnlimited","Value":"0"}],"SectionId":2},{"Properties":[{"Key":"StartDate","Value":"1 februari 2023"},{"Key":"NumberOfRemainingDays","Value":"16"}],"SectionId":3},{"Properties":[{"Key":"UsedAmount","Value":"0.00"}],"SectionId":4}]}
         header = {"Content-Type": "application/json"}
-        response = self.s.get("https://my.youfone.be/prov/MyYoufone/MyYOufone.Wcf/v2.0/Service.svc/json/GetOverviewMsisdnInfo",data='{"request": {"Msisdn": '+str(self.msisdn)+'}}',headers=header,timeout=10)
+        # response = self.s.get("https://my.youfone.be/prov/MyYoufone/MyYOufone.Wcf/v2.0/Service.svc/json/GetOverviewMsisdnInfo",data='{"request": {"Msisdn": '+str(self.msisdn)+'}}',headers=header,timeout=10)
         self.s.headers["securitykey"] = response.headers.get('securitykey')
         _LOGGER.debug("bibliotheek.be  result status code: " + str(response.status_code) + ", msisdn" + str(self.msisdn))
         _LOGGER.debug("bibliotheek.be  result " + response.text)
