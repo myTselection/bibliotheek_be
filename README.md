@@ -1,5 +1,7 @@
 [![hacs_badge](https://img.shields.io/badge/HACS-Custom-41BDF5.svg)](https://github.com/hacs/integration)
 
+# NOT USABLE YET, STILL IN EARLY DEVELOPMENT
+
 # Bibliotheek.be (Beta)
 [bibliotheek.be](https://www.bibliotheek.be/) Home Assistant custom component
 
