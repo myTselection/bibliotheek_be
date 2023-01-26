@@ -77,6 +77,7 @@ class ComponentSession(object):
         oauth_token = query_params.get('oauth_token')
         hint = query_params.get('hint')
         _LOGGER.info(f"bibliotheek.be url params parsed: login_location: {login_location}, oauth_token: {oauth_token}, oauth_verifier: {oauth_verifier}")
+        #example login_location: https://bibliotheek.be/my-library/login/callback?oauth_token=***************&oauth_verifier=*********&uilang=nl
         assert response.status_code == 303
         
         #login callback based on url in location of response received
@@ -86,16 +87,50 @@ class ComponentSession(object):
         _LOGGER.info(f"bibliotheek.be login callback get header: {response.headers}")
         assert response.status_code == 302
         
+        # request access code, https://mijn.bibliotheek.be/openbibid-api.html#_authenticatie
+        data = {"hint": hint, "token": oauth_token, "callback":"https://bibliotheek.be/my-library/login/callback", "email": username, "password": password}
+        response = self.s.post('https://mijn.bibliotheek.be/openbibid/rest/accessToken',headers=header,data=data,timeout=10,allow_redirects=False)
+        _LOGGER.info(f"bibliotheek.be login get result status code: {response.status_code}")
+       
+        
         
         #lidmaatschap based on url in location of response received
         response = self.s.get(f"{login_callback_location}",headers=header,timeout=10,allow_redirects=False)
         lidmaatschap_response_header = response.headers
-        _LOGGER.info(f"bibliotheek.be lidmaatschap get result status code: {response.status_code} , response: {response.text}")
+        _LOGGER.info(f"bibliotheek.be lidmaatschap get result status code: {response.status_code}") # response: {response.text}")
         _LOGGER.info(f"bibliotheek.be lidmaatschap get header: {response.headers}")
         assert response.status_code == 200
-        # only html info returned, no json usable data found. converting html into json is not working well
-        # soup = BeautifulSoup(response.text, 'html.parser')
-        # data = json.dumps(soup.prettify())
+        soup = BeautifulSoup(response.text, 'html.parser')
+        
+        
+        #find all accounts
+        accounts = soup.find_all('div', class_='my-library-user-library-account-list__account')
+        _LOGGER.info(f"accounts found: {accounts}")
+
+        #iterate through each account
+        for div in accounts:
+            #get the name
+            name = div.find('div', class_='my-library-user-library-account-list__name').text
+            _LOGGER.info(f"bib account {name}")
+            #get the number of loans
+            try:
+                loans = div.find('li', class_='my-library-user-library-account-list__loans-link').a.text
+            except AttributeError:
+                loans = "0"
+            try:
+                reservations = div.find('li', class_='my-library-user-library-account-list__holds-link').a.text
+            except AttributeError:
+                reservations = "0"
+            try:
+                account_url = div.find('div', class_='my-library-user-library-account-list__basic-info').a.text
+            except AttributeError:
+                account_url = "0"
+            try:
+                account_id = div.find('a')['href'].split('/')[-1]
+            except AttributeError:
+                account_id = "0"
+            #print the name and number of loans
+            _LOGGER.info(f"{name} : uitleningen {loans} , reservatie: {reservations}, url {account_url}, id {account_id}")
         
         # _LOGGER.info(f"bibliotheek.be lidmaatschap data: {data}")
         return oauth_token
