@@ -118,19 +118,23 @@ class ComponentSession(object):
             except AttributeError:
                 loans = "0"
             try:
+                loans_url = div.find('a')['href=*uitleningen']
+            except AttributeError:
+                loans_url = ""
+            try:
                 reservations = div.find('li', class_='my-library-user-library-account-list__holds-link').a.text
             except AttributeError:
                 reservations = "0"
             try:
-                account_url = div.find('div', class_='my-library-user-library-account-list__basic-info').a.text
+                account_url = div.find('a')['href']
             except AttributeError:
                 account_url = "0"
             try:
-                account_id = div.find('a')['href'].split('/')[-1]
+                account_id = account_url.split('/')[-1]
             except AttributeError:
                 account_id = "0"
             #print the name and number of loans
-            _LOGGER.info(f"{name} : uitleningen {loans} , reservatie: {reservations}, url {account_url}, id {account_id}")
+            _LOGGER.info(f"{name} : uitleningen {loans} , url: {loans_url}, reservatie: {reservations}, url {account_url}, id {account_id}")
         
         # _LOGGER.info(f"bibliotheek.be lidmaatschap data: {data}")
         return oauth_token
