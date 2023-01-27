@@ -105,6 +105,32 @@ class ComponentSession(object):
         accounts = soup.find_all('div', class_='my-library-user-library-account-list__account')
         # _LOGGER.debug(f"accounts found: {accounts}")
 
+        # {
+            # "1234567": {
+                # "account_details": {
+                    # "id": "1234567",
+                    # "libraryName": "Bibliotheek *****",
+                    # "userName": "first last",
+                    # "email": "email@mail.com",
+                    # "alertEmailSync": false,
+                    # "barcode": "1234567890123",
+                    # "url": "https://bibliotheek.be/mijn-bibliotheek/lidmaatschappen/1234567"
+                # },
+                # "loans": {
+                    # "loans": 0,
+                    # "url": "https://bibliotheek.be/mijn-bibliotheek/lidmaatschappen/1234567/uitleningen",
+                    # "history": "https://bibliotheek.be/mijn-bibliotheek/lidmaatschappen/1234567/leenhistoriek"
+                # },
+                # "reservations": {
+                    # "reserveration": 0,
+                    # "url": "https://bibliotheek.be/mijn-bibliotheek/lidmaatschappen/1234567/reservaties"
+                # },
+                # "open_amounts": {
+                    # "open_amounts": 0,
+                    # "url": ""
+                # }
+            # }
+        # }
         #iterate through each account
         for div in accounts:
             try:
@@ -163,15 +189,43 @@ class ComponentSession(object):
 
             _LOGGER.debug(f"uitleningen {loans} , url: {loans_url}, reservatie: {reservations}, url {account_url}, account_details {account_details}")
             self.userdetails[account_details.get('id')]={'account_details': account_details , 'loans': { 'loans': loans, 'url': loans_url, 'history': loan_history_url}, 'reservations': {'reserveration': reservations, 'url':reservations_url}, 'open_amounts': {'open_amounts': open_amounts, 'url':''}}
-        _LOGGER.info(f"self.userdetails {json.dumps(self.userdetails,indent=4)}")
+        _LOGGER.debug(f"self.userdetails {json.dumps(self.userdetails,indent=4)}")
         return self.userdetails
         
 
+
+    # loand details example
+    # {
+        # "National Geographic junior--": {
+            # "title": "National Geographic junior",
+            # "author": "-",
+            # "loan_type": "",
+            # "url": "https://sint-pieters-leeuw.bibliotheek.be/resolver.ashx?extid=%7Cwise-vlaamsbrabant%7C4390213",
+            # "image_src": "https://bibliotheek.be/themes/custom/library_portal_theme/assets/img/placeholder_book.png",
+            # "days_remaining": 16,
+            # "loan_from": "01/01/2022",
+            # "loan_till": "01/01/2023",
+            # "extend_loan_id": "12345678",
+            # "library": "Bibliotheek *****"
+        # },
+        # "Peppers of the Caribbean-Ornella, Emanuele": {
+            # "title": "Peppers of the Caribbean",
+            # "author": "Ornella, Emanuele",
+            # "loan_type": "",
+            # "url": "https://sint-pieters-leeuw.bibliotheek.be/resolver.ashx?extid=%7Cwise-vlaamsbrabant%7C2472827",
+            # "image_src": "https://bibliotheek.be/themes/custom/library_portal_theme/assets/img/placeholder_book.png",
+            # "days_remaining": 16,
+            # "loan_from": "01/01/2022",
+            # "loan_till": "01/01/2023",
+            # "extend_loan_id": "12345678",
+            # "library": "Bibliotheek ***"
+        # }
+    # }
     def loan_details(self, url):
         loandetails = dict()
         header = {"Content-Type": "application/json"}
 
-        _LOGGER.info(f"loan details URL {url}")
+        _LOGGER.debug(f"loan details URL {url}")
         #lidmaatschap based on url in location of response received
         response = self.s.get(f"{url}",headers=header,timeout=10,allow_redirects=False)
         loan_details_response_header = response.headers
@@ -227,12 +281,62 @@ class ComponentSession(object):
                 except AttributeError:
                     loan_till = ""
                 try:
-                    # extend_loan = book.find('div', class_='my-library-user-library-account-loans__extend-loan')
-                    extend_loan = ""
-                except AttributeError:
-                    extend_loan = ""
-                
-                loandetails[f"{title}-{author}"] = {'title': title, 'author': author, 'loan_type': loan_type, 'url': url, 'image_src': image_src, 'days_remaining': days_remaining, 'loan_from': loan_from, 'loan_till': loan_till, 'extend_loan':extend_loan, 'library': libname}
-        # _LOGGER.info(f"self.loandetails {self.loandetails}") 
-        _LOGGER.info(f"self.loandetails {json.dumps(loandetails,indent=4)}") 
+                    extend_loan_id = book.find('div', class_='my-library-user-library-account-loans__extend-loan')
+                    extend_loan_id = extend_loan_id.select_one('input[type="checkbox"]')['id']
+                except (AttributeError, TypeError):
+                    extend_loan_id = ""
+                #example extension
+                # https://bibliotheek.be/mijn-bibliotheek/lidmaatschappen/1544061/uitleningen/verlengen?loan-ids=14870745%2C14871363%2C15549439%2C15707198%2C15933330%2C15938501%2C16370683%2C16490618%2C16584912%2C15468349%2C23001576%2C26583345
+                loandetails[f"{title}-{author}"] = {'title': title, 'author': author, 'loan_type': loan_type, 'url': url, 'image_src': image_src, 'days_remaining': days_remaining, 'loan_from': loan_from, 'loan_till': loan_till, 'extend_loan_id':extend_loan_id, 'library': libname}
+        # _LOGGER.info(f"loandetails {loandetails}") 
+        _LOGGER.debug(f"loandetails {json.dumps(loandetails,indent=4)}") 
         return loandetails
+        
+
+
+    def extend_all(self, url, execute):
+        loandetails = dict()
+        header = {"Content-Type": "application/json"}
+
+        _LOGGER.debug(f"extend_all URL {url}")
+        #lidmaatschap based on url in location of response received
+        response = self.s.get(f"{url}",headers=header,timeout=10,allow_redirects=False)
+        loan_details_response_header = response.headers
+        _LOGGER.debug(f"bibliotheek.be lidmaatschap get result status code: {response.status_code} response: {response.text}")
+        _LOGGER.debug(f"bibliotheek.be lidmaatschap get header: {response.headers}")
+        assert response.status_code == 200
+        soup = BeautifulSoup(response.text, 'html.parser')
+        
+        extend_loan_ids = f"{url}/velengen?loan-ids="
+        num_id_found = 0
+        
+        #find all libs
+        libs = soup.find_all('div', class_='my-library-user-library-account-loans__loan-wrapper')
+        # _LOGGER.debug(f"accounts found: {accounts}")
+
+        #iterate through each account
+        for div in libs:
+            libname = div.find('h2').text
+            
+            books = div.find_all('div', class_='my-library-user-library-account-loans__loan')
+            for book in books:
+                try:
+                    extend_loan_id = book.find('div', class_='my-library-user-library-account-loans__extend-loan')
+                    extend_loan_id = extend_loan_id.select_one('input[type="checkbox"]')['id']
+                    if num_id_found == 0:
+                        extend_loan_ids += f"%2C{extend_loan_id}"
+                    else:
+                        extend_loan_ids += f"{extend_loan_id}"
+                    num_id_found += 1
+                except (AttributeError, TypeError):
+                    extend_loan_id = ""
+        
+        _LOGGER.debug(f"extend_loan_ids: {extend_loan_ids}") 
+        
+        if execute & num_id_found > 0:
+            response = self.s.get(f"{extend_loan_ids}",headers=header,timeout=10,allow_redirects=False)
+            assert response.status_code == 200
+        #example extension
+        # https://bibliotheek.be/mijn-bibliotheek/lidmaatschappen/1544061/uitleningen/verlengen?loan-ids=14870745%2C14871363%2C15549439%2C15707198%2C15933330%2C15938501%2C16370683%2C16490618%2C16584912%2C15468349%2C23001576%2C26583345
+        # _LOGGER.info(f"self.loandetails {self.loandetails}") 
+        return num_id_found

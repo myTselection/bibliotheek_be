@@ -42,12 +42,13 @@ async def dry_setup(hass, config_entry, async_add_devices):
         hass
     )
     await componentData._force_update()
-    assert componentData._usage_details is not None
+    assert componentData._userdetails is not None
+    assert componentData._loandetails is not None
     
-    sensorUser = ComponentUserSensor(componentData, hass)
-    sensors.append(sensorUser)
-    
-    
+    for userid, userdetail in componentData._userdetails.items():
+        sensorUser = ComponentUserSensor(componentData, hass, userid)
+        _LOGGER.info(f"{NAME} Init sensor for user {id}")
+        sensors.append(sensorUser)
     async_add_devices(sensors)
 
 
@@ -83,7 +84,8 @@ class ComponentData:
         self._password = password
         self._client = client
         self._session = ComponentSession()
-        self._usage_details = None
+        self._userdetails = None
+        self._loandetails = dict()
         self._hass = hass
         self._lastupdate = None
         self._oauth_token = None
@@ -95,10 +97,20 @@ class ComponentData:
             self._session = ComponentSession()
 
         if self._session:
-            self._oauth_token = await self._hass.async_add_executor_job(lambda: self._session.login(self._username, self._password))
+            self._userdetails = await self._hass.async_add_executor_job(lambda: self._session.login(self._username, self._password))
+            assert self._userdetails is not None
             _LOGGER.info(f"{NAME} init login completed")
-            # self._usage_details = await self._hass.async_add_executor_job(lambda: self._session.usage_details())
-            _LOGGER.debug(f"{NAME} init usage_details data: {self._usage_details}")
+            for user_id, userdetail in self._userdetails.items():
+                url = userdetail.get('loans').get('url')
+                if url:
+                    _LOGGER.info(f"calling loan details")
+                    loandetails = await self._hass.async_add_executor_job(lambda: self._session.loan_details(url))
+                    assert loandetails is not None
+                    _LOGGER.info(f"loandetails {json.dumps(loandetails,indent=4)}") 
+                    # _LOGGER.info(f"calling extend_all")
+                    # num_extensions = self.session.extend_all(url, False)
+                    # _LOGGER.info(f"num of extensions found: {num_extensions}")
+                    self._loandetails[user_id] = loandetails
             self._lastupdate = datetime.now()
                 
     @Throttle(MIN_TIME_BETWEEN_UPDATES)
@@ -114,37 +126,37 @@ class ComponentData:
 
 
 class ComponentUserSensor(Entity):
-    def __init__(self, data, hass):
+    def __init__(self, data, hass, userid):
         self._data = data
         self._hass = hass
+        self._userid = userid
         self._last_update = None
-        self._period_start_date = None
-        self._period_left = None
-        self._total_volume = None
-        self._isunlimited = None
-        self._extracosts = None
-        self._used_percentage = None
-        self._phonenumber = None
-        self._includedvolume_usage = None
+        
+        self._num_loans = self._data._userdetails[self._userid].get('account_details').get('loans').get('loans')
+        self._num_reservations = self._data._userdetails[self._userid].get('account_details').get('reservations').get('reservations')
+        self._open_amounts = self._data._userdetails[self._userid].get('account_details').get('open_amounts').get('open_amounts')
+        self._barcode = self._data._userdetails[self._userid].get('account_details').get('account_details').get('barcode')
+        self._username = self._data._userdetails[self._userid].get('account_details').get('userName')
+        self._libraryName = self._data._userdetails[self._userid].get('account_details').get('libraryName')
+        self._loandetails = self._data._loandetails
 
     @property
     def state(self):
         """Return the state of the sensor."""
-        return self._used_percentage
+        return self._num_loans
 
     async def async_update(self):
         await self._data.update()
         self._last_update =  self._data._lastupdate;
         
-        self._period_start_date = self._data._usage_details.get('Object')[2].get('Properties')[0].get('Value')
-        self._period_left = self._data._usage_details.get('Object')[2].get('Properties')[1].get('Value')
+        self._num_loans = self._data._userdetails[self._userid].get('account_details').get('loans').get('loans')
+        self._num_reservations = self._data._userdetails[self._userid].get('account_details').get('reservations').get('reservations')
+        self._open_amounts = self._data._userdetails[self._userid].get('account_details').get('open_amounts').get('open_amounts')
+        self._barcode = self._data._userdetails[self._userid].get('account_details').get('account_details').get('barcode')
+        self._username = self._data._userdetails[self._userid].get('account_details').get('userName')
+        self._libraryName = self._data._userdetails[self._userid].get('account_details').get('libraryName')
+        self._loandetails = self._data._loandetails
         
-        self._includedvolume_usage = self._data._usage_details.get('Object')[1].get('Properties')[0].get('Value')
-        self._total_volume = self._data._usage_details.get('Object')[1].get('Properties')[1].get('Value')
-        self._used_percentage = self._data._usage_details.get('Object')[1].get('Properties')[2].get('Value')
-        self._isunlimited = self._data._usage_details.get('Object')[1].get('Properties')[3].get('Value')
-        self._extracosts = self._data._usage_details.get('Object')[3].get('Properties')[0].get('Value')
-            
         
     async def async_will_remove_from_hass(self):
         """Clean up after entity before removal."""
@@ -155,18 +167,18 @@ class ComponentUserSensor(Entity):
     @property
     def icon(self) -> str:
         """Shows the correct icon for container."""
-        return "mdi:phone-plus"
+        return "mdi:bookshelf"
         
     @property
     def unique_id(self) -> str:
         """Return the name of the sensor."""
         return (
-            NAME + " call sms"
+            f"{NAME} {self._userid}"
         )
 
     @property
     def name(self) -> str:
-        return self.unique_id
+        return f"{NAME} {self._username} {self._libraryName}"
 
     @property
     def extra_state_attributes(self) -> dict:
@@ -174,16 +186,26 @@ class ComponentUserSensor(Entity):
         return {
             ATTR_ATTRIBUTION: NAME,
             "last update": self._last_update,
-            "used_percentage": self._used_percentage,
-            "total_volume": self._total_volume,
-            "includedvolume_usage": self._includedvolume_usage,
-            "unlimited": self._isunlimited,
-            "period_start": self._period_start_date,
-            "period_days_left": self._period_left,
-            "extra_costs": self._extracosts,
-            "usage_details_json": self._data._usage_details,
-            "user_details_json": self._data._user_details
+            "userid": self._userid,
+            "barcode": self._barcode,
+            "num_loans": self._num_loans,
+            "num_loans": self._num_loans,
+            "num_reservations": self._num_reservations,
+            "open_amounts": self._open_amounts,
+            "username": self._username,
+            "libraryName": self._libraryName,
+            "loandetails": self._loandetails
         }
+        
+        # self._userid = userid
+        # self._barcode = None
+        # self._last_update = None
+        # self._num_loans = None
+        # self._num_reservations = None
+        # self._open_amounts = None
+        # self._username = None
+        # self._libraryName = None
+        # self._loandetails = None
 
     @property
     def device_info(self) -> dict:
@@ -202,9 +224,9 @@ class ComponentUserSensor(Entity):
     @property
     def unit_of_measurement(self) -> str:
         """Return the unit of measurement this sensor expresses itself in."""
-        return "%"
+        return "loans"
 
     @property
     def friendly_name(self) -> str:
-        return self.unique_id
+        return self.name
         
