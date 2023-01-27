@@ -1,6 +1,7 @@
 import json
 import logging
 import pprint
+import re #regular expression
 from collections import defaultdict
 from datetime import date, datetime, timedelta
 from typing import List
@@ -118,11 +119,15 @@ class ComponentSession(object):
             except AttributeError:
                 loans = "0"
             try:
-                loans_url = div.find('a')['href=*uitleningen']
+                loans_url = div.find('a', href=re.compile('uitleningen')).get('href')
             except AttributeError:
                 loans_url = ""
             try:
                 reservations = div.find('li', class_='my-library-user-library-account-list__holds-link').a.text
+            except AttributeError:
+                reservations = "0"
+            try:
+                reservations = div.find('li', class_='my-library-user-library-account-list__open-amount-link').a.text
             except AttributeError:
                 reservations = "0"
             try:
@@ -133,8 +138,12 @@ class ComponentSession(object):
                 account_id = account_url.split('/')[-1]
             except AttributeError:
                 account_id = "0"
+            try:
+                account_details = div.select('[class^=sync-email-notification]')[0].get(':default-active-account')
+            except AttributeError:
+                account_details = ""
             #print the name and number of loans
-            _LOGGER.info(f"{name} : uitleningen {loans} , url: {loans_url}, reservatie: {reservations}, url {account_url}, id {account_id}")
+            _LOGGER.info(f"{name} : uitleningen {loans} , url: {loans_url}, reservatie: {reservations}, url {account_url}, id {account_id}, account_details {account_details}")
         
         # _LOGGER.info(f"bibliotheek.be lidmaatschap data: {data}")
         return oauth_token
