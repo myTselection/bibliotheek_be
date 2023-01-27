@@ -6,8 +6,6 @@
 [![GitHub last commit](https://img.shields.io/github/last-commit/myTselection/bibliotheek_be.svg)](https://github.com/myTselection/bibliotheek_be/commits/master)
 [![GitHub commit activity](https://img.shields.io/github/commit-activity/m/myTselection/bibliotheek_be.svg)](https://github.com/myTselection/bibliotheek_be/graphs/commit-activity)
 
-# NOT USABLE YET, STILL IN EARLY DEVELOPMENT
-
 # Bibliotheek.be (Beta)
 [bibliotheek.be](https://www.bibliotheek.be/) Home Assistant custom component
 
