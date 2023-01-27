@@ -106,7 +106,7 @@ class ComponentData:
                     _LOGGER.info(f"calling loan details")
                     loandetails = await self._hass.async_add_executor_job(lambda: self._session.loan_details(url))
                     assert loandetails is not None
-                    _LOGGER.info(f"loandetails {json.dumps(loandetails,indent=4)}") 
+                    _LOGGER.debug(f"loandetails {json.dumps(loandetails,indent=4)}") 
                     # _LOGGER.info(f"calling extend_all")
                     # num_extensions = self.session.extend_all(url, False)
                     # _LOGGER.info(f"num of extensions found: {num_extensions}")
@@ -132,12 +132,12 @@ class ComponentUserSensor(Entity):
         self._userid = userid
         self._last_update = None
         
-        self._num_loans = self._data._userdetails[self._userid].get('account_details').get('loans').get('loans')
-        self._num_reservations = self._data._userdetails[self._userid].get('account_details').get('reservations').get('reservations')
-        self._open_amounts = self._data._userdetails[self._userid].get('account_details').get('open_amounts').get('open_amounts')
-        self._barcode = self._data._userdetails[self._userid].get('account_details').get('account_details').get('barcode')
-        self._username = self._data._userdetails[self._userid].get('account_details').get('userName')
-        self._libraryName = self._data._userdetails[self._userid].get('account_details').get('libraryName')
+        self._num_loans = self._data._userdetails.get(self._userid).get('account_details').get('loans').get('loans')
+        self._num_reservations = self._data._userdetails.get(self._userid).get('account_details').get('reservations').get('reservations')
+        self._open_amounts = self._data._userdetails.get(self._userid).get('account_details').get('open_amounts').get('open_amounts')
+        self._barcode = self._data._userdetails.get(self._userid).get('account_details').get('account_details').get('barcode')
+        self._username = self._data._userdetails.get(self._userid).get('account_details').get('userName')
+        self._libraryName = self._data._userdetails.get(self._userid).get('account_details').get('libraryName')
         self._loandetails = self._data._loandetails
 
     @property
@@ -149,12 +149,12 @@ class ComponentUserSensor(Entity):
         await self._data.update()
         self._last_update =  self._data._lastupdate;
         
-        self._num_loans = self._data._userdetails[self._userid].get('account_details').get('loans').get('loans')
-        self._num_reservations = self._data._userdetails[self._userid].get('account_details').get('reservations').get('reservations')
-        self._open_amounts = self._data._userdetails[self._userid].get('account_details').get('open_amounts').get('open_amounts')
-        self._barcode = self._data._userdetails[self._userid].get('account_details').get('account_details').get('barcode')
-        self._username = self._data._userdetails[self._userid].get('account_details').get('userName')
-        self._libraryName = self._data._userdetails[self._userid].get('account_details').get('libraryName')
+        self._num_loans = self._data._userdetails.get(self._userid).get('account_details').get('loans').get('loans')
+        self._num_reservations = self._data._userdetails.get(self._userid).get('account_details').get('reservations').get('reservations')
+        self._open_amounts = self._data._userdetails.get(self._userid).get('account_details').get('open_amounts').get('open_amounts')
+        self._barcode = self._data._userdetails.get(self._userid).get('account_details').get('account_details').get('barcode')
+        self._username = self._data._userdetails.get(self._userid).get('account_details').get('userName')
+        self._libraryName = self._data._userdetails.get(self._userid).get('account_details').get('libraryName')
         self._loandetails = self._data._loandetails
         
         
