@@ -160,6 +160,7 @@ class ComponentSession(object):
                 open_amounts_url = f"https://bibliotheek.be{div.find('a', href=re.compile('te-betalen')).get('href')}"
             except AttributeError:
                 open_amounts_url = ""
+
             _LOGGER.debug(f"uitleningen {loans} , url: {loans_url}, reservatie: {reservations}, url {account_url}, account_details {account_details}")
             self.userdetails[account_details.get('id')]={'account_details': account_details , 'loans': { 'loans': loans, 'url': loans_url, 'history': loan_history_url}, 'reservations': {'reserveration': reservations, 'url':reservations_url}, 'open_amounts': {'open_amounts': open_amounts, 'url':''}}
         _LOGGER.info(f"self.userdetails {json.dumps(self.userdetails,indent=4)}")
@@ -167,78 +168,71 @@ class ComponentSession(object):
         
 
     def loan_details(self, url):
+        loandetails = dict()
         header = {"Content-Type": "application/json"}
 
         _LOGGER.info(f"loan details URL {url}")
         #lidmaatschap based on url in location of response received
         response = self.s.get(f"{url}",headers=header,timeout=10,allow_redirects=False)
         loan_details_response_header = response.headers
-        _LOGGER.info(f"bibliotheek.be lidmaatschap get result status code: {response.status_code} response: {response.text}")
-        _LOGGER.info(f"bibliotheek.be lidmaatschap get header: {response.headers}")
+        _LOGGER.debug(f"bibliotheek.be lidmaatschap get result status code: {response.status_code} response: {response.text}")
+        _LOGGER.debug(f"bibliotheek.be lidmaatschap get header: {response.headers}")
         assert response.status_code == 200
         soup = BeautifulSoup(response.text, 'html.parser')
         
         
-        #find all accounts
-        accounts = soup.find_all('div', class_='my-library-user-library-account-list__account')
+        #find all libs
+        libs = soup.find_all('div', class_='my-library-user-library-account-loans__loan-wrapper')
         # _LOGGER.debug(f"accounts found: {accounts}")
 
         #iterate through each account
-        for div in accounts:
-            try:
-                # account_details = div.select('[class^=sync-email-notification]')[0].get(':default-active-account')
-                # account_details = div.select('[class^=sync-email-notification]')
-                account_details = div.find(attrs={':default-active-account': True}).get(':default-active-account')
-            except AttributeError:
-                account_details = ""
-            #get the number of loans
-            account_details = json.loads(account_details)
-            try:
-                account_url = f"https://bibliotheek.be{div.find('a')['href']}"
-            except AttributeError:
-                account_url = ""
-            account_details['url'] = account_url
-            try:
-                loans = div.find('li', class_='my-library-user-library-account-list__loans-link').a.text
-                if "geen" in loans.lower():
-                    loans = 0
-                else:
-                    loans = int(loans.lower().replace(' uitleningen','').replace(' uitlening',''))
-            except AttributeError:
-                loans = 0
-            try:
-                loans_url = f"https://bibliotheek.be{div.find('a', href=re.compile('uitleningen')).get('href')}"
-            except AttributeError:
-                loans_url = ""
-            try:
-                loan_history_url = f"https://bibliotheek.be{div.find('a', href=re.compile('leenhistoriek')).get('href')}"
-            except AttributeError:
-                loan_history_url = ""
-            try:
-                reservations = div.find('li', class_='my-library-user-library-account-list__holds-link').a.text
-                if "geen" in reservations.lower():
-                    reservations = 0
-                else:
-                    reservations= int(reservations.lower().replace(' reserveringen','').replace(' reservering',''))
-            except AttributeError:
-                reservations = 0
-            try:
-                reservations_url = f"https://bibliotheek.be{div.find('a', href=re.compile('reservaties')).get('href')}"
-            except AttributeError:
-                reservations_url = ""
-            try:
-                open_amounts = div.find('li', class_='my-library-user-library-account-list__open-amount-link').a.text
-                if "geen" in open_amounts.lower():
-                    open_amounts = 0
-                else:
-                    open_amounts = float(open_amounts.lower().replace(' openstaande bedragen','').replace(' openstaand bedrag','').replace(' openstaande kosten','').replace('€','').replace(',','.'))
-            except AttributeError:
-                open_amounts = 0
-            try:
-                open_amounts_url = f"https://bibliotheek.be{div.find('a', href=re.compile('te-betalen')).get('href')}"
-            except AttributeError:
-                open_amounts_url = ""
-            # _LOGGER.debug(f"uitleningen {loans} , url: {loans_url}, reservatie: {reservations}, url {account_url}, account_details {account_details}")
-            self.userdetails[account_details.get('id')]={'account_details': account_details , 'loans': { 'loans': loans, 'url': loans_url, 'history': loan_history_url}, 'reservations': {'reserveration': reservations, 'url':reservations_url}, 'open_amounts': {'open_amounts': open_amounts, 'url':''}}
-        # _LOGGER.info(f"self.userdetails {json.dumps(self.userdetails,indent=4)}")
-        return self.userdetails
+        for div in libs:
+            libname = div.find('h2').text
+            
+            books = div.find_all('div', class_='my-library-user-library-account-loans__loan')
+            for book in books:
+                try:
+                    title = book.find('h3', class_='my-library-user-library-account-loans__loan-title').a.text.strip()
+                except AttributeError:
+                    title = ""
+                try:
+                    url = book.find('h3', class_='my-library-user-library-account-loans__loan-title').a.get('href')
+                except AttributeError:
+                    url = ""
+                try:
+                    image_src = book.find('img', class_='my-library-user-library-account-loans__loan-cover-img').get('src')
+                except AttributeError:
+                    image_src = ""
+                try:
+                    author = book.find('div', class_='author').text.strip()
+                except AttributeError:
+                    author = ""
+                try:
+                    loan_type = book.find('div', class_='my-library-user-library-account-loans__loan-type-label').text
+                except AttributeError:
+                    loan_type = ""
+                try:
+                    days_remaining = book.find('div', class_='my-library-user-library-account-loans__loan-days').text.strip()
+                    days_remaining = int(days_remaining.lower().replace('nog ','').replace(' dagen',''))
+                except AttributeError:
+                    days_remaining = ""
+                try:
+                    loan_from = book.find('div', class_='my-library-user-library-account-loans__loan-from-to')
+                    loan_from = loan_from.select_one('.my-library-user-library-account-loans__loan-from-to > div > span:nth-of-type(2)').text
+                except AttributeError:
+                    loan_from = ""
+                try:
+                    loan_till = book.find('div', class_='my-library-user-library-account-loans__loan-from-to')
+                    loan_till = loan_till.select_one('.my-library-user-library-account-loans__loan-from-to > div:nth-of-type(2) > span:nth-of-type(2)').text
+                except AttributeError:
+                    loan_till = ""
+                try:
+                    # extend_loan = book.find('div', class_='my-library-user-library-account-loans__extend-loan')
+                    extend_loan = ""
+                except AttributeError:
+                    extend_loan = ""
+                
+                loandetails[f"{title}-{author}"] = {'title': title, 'author': author, 'loan_type': loan_type, 'url': url, 'image_src': image_src, 'days_remaining': days_remaining, 'loan_from': loan_from, 'loan_till': loan_till, 'extend_loan':extend_loan, 'library': libname}
+        # _LOGGER.info(f"self.loandetails {self.loandetails}") 
+        _LOGGER.info(f"self.loandetails {json.dumps(loandetails,indent=4)}") 
+        return loandetails
