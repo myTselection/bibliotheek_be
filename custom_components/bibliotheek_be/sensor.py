@@ -132,10 +132,11 @@ class ComponentUserSensor(Entity):
         self._userid = userid
         self._last_update = None
         
-        self._num_loans = self._data._userdetails.get(self._userid).get('account_details').get('loans').get('loans')
-        self._num_reservations = self._data._userdetails.get(self._userid).get('account_details').get('reservations').get('reservations')
-        self._open_amounts = self._data._userdetails.get(self._userid).get('account_details').get('open_amounts').get('open_amounts')
-        self._barcode = self._data._userdetails.get(self._userid).get('account_details').get('account_details').get('barcode')
+        # _LOGGER.info(f"init sensor userid {userid} _userdetails {self._data._userdetails}")
+        self._num_loans = self._data._userdetails.get(self._userid).get('loans').get('loans')
+        self._num_reservations = self._data._userdetails.get(self._userid).get('reservations').get('reservations')
+        self._open_amounts = self._data._userdetails.get(self._userid).get('open_amounts').get('open_amounts')
+        self._barcode = self._data._userdetails.get(self._userid).get('account_details').get('barcode')
         self._username = self._data._userdetails.get(self._userid).get('account_details').get('userName')
         self._libraryName = self._data._userdetails.get(self._userid).get('account_details').get('libraryName')
         self._loandetails = self._data._loandetails
@@ -149,10 +150,10 @@ class ComponentUserSensor(Entity):
         await self._data.update()
         self._last_update =  self._data._lastupdate;
         
-        self._num_loans = self._data._userdetails.get(self._userid).get('account_details').get('loans').get('loans')
-        self._num_reservations = self._data._userdetails.get(self._userid).get('account_details').get('reservations').get('reservations')
-        self._open_amounts = self._data._userdetails.get(self._userid).get('account_details').get('open_amounts').get('open_amounts')
-        self._barcode = self._data._userdetails.get(self._userid).get('account_details').get('account_details').get('barcode')
+        self._num_loans = self._data._userdetails.get(self._userid).get('loans').get('loans')
+        self._num_reservations = self._data._userdetails.get(self._userid).get('reservations').get('reservations')
+        self._open_amounts = self._data._userdetails.get(self._userid).get('open_amounts').get('open_amounts')
+        self._barcode = self._data._userdetails.get(self._userid).get('account_details').get('barcode')
         self._username = self._data._userdetails.get(self._userid).get('account_details').get('userName')
         self._libraryName = self._data._userdetails.get(self._userid).get('account_details').get('libraryName')
         self._loandetails = self._data._loandetails
