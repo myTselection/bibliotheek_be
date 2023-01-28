@@ -49,6 +49,17 @@ async def dry_setup(hass, config_entry, async_add_devices):
         sensorUser = ComponentUserSensor(componentData, hass, userid)
         _LOGGER.info(f"{NAME} Init sensor for user {id}")
         sensors.append(sensorUser)
+        
+    library_names = set()
+    for user_id, user_data in componentData._userdetails.items():
+        libraryName = user_data.get('account_details').get('libraryName')
+        library_names.add(libraryName)
+        
+    for libraryName in library_names:
+        sensorDate = ComponentDateSensor(componentData, hass, libraryName)
+        _LOGGER.info(f"{NAME} Init sensor for date {libraryName}")
+        sensors.append(sensorDate)
+        
     async_add_devices(sensors)
 
 #TODO: sensor per library (total items loand from library), attribute: number of each type lended
@@ -192,7 +203,6 @@ class ComponentUserSensor(Entity):
             "userid": self._userid,
             "barcode": self._barcode,
             "num_loans": self._num_loans,
-            "num_loans": self._num_loans,
             "num_reservations": self._num_reservations,
             "open_amounts": self._open_amounts,
             "username": self._username,
@@ -228,6 +238,100 @@ class ComponentUserSensor(Entity):
     def unit_of_measurement(self) -> str:
         """Return the unit of measurement this sensor expresses itself in."""
         return "loans"
+
+    @property
+    def friendly_name(self) -> str:
+        return self.name
+        
+
+class ComponentDateSensor(Entity):
+    def __init__(self, data, hass, libraryName):
+        self._data = data
+        self._hass = hass
+        self._libraryName = libraryName
+        self._last_update = None
+        self._lowest_till_date = None
+        self._days_left = None
+        self._loandetails = []
+        self._num_loans = 0
+
+    @property
+    def state(self):
+        """Return the state of the sensor."""
+        return self._days_left
+
+    async def async_update(self):
+        await self._data.update()
+        self._last_update =  self._data._lastupdate;
+        
+        
+        for name, loan_data in self._data._loandetails.items():
+            library_name_loop = loan_data('library')
+            if library_name_loop == self._libraryName:
+                if (self._days_left is None) or (self._days_left > loan_data('days_remaining')):
+                    self._days_left = loan_data('days_remaining')
+                    self._lowest_till_date = loan_data('loan_till')
+                    self._loandetails.append(loan_data)
+                    ++ self._num_loans
+                if self._days_left == loan_data('days_remaining'):
+                    self._loandetails.append(loan_data)
+                    ++ self._num_loans
+        
+        
+    async def async_will_remove_from_hass(self):
+        """Clean up after entity before removal."""
+        _LOGGER.info("async_will_remove_from_hass " + NAME)
+        self._data.clear_session()
+
+
+    @property
+    def icon(self) -> str:
+        """Shows the correct icon for container."""
+        return "mdi:bookshelf"
+        
+    @property
+    def unique_id(self) -> str:
+        """Return the name of the sensor."""
+        return (
+            f"{NAME} {self._libraryName}"
+        )
+
+    @property
+    def name(self) -> str:
+        return self.unique_id
+
+    @property
+    def extra_state_attributes(self) -> dict:
+        """Return the state attributes."""
+        return {
+            ATTR_ATTRIBUTION: NAME,
+            "last update": self._last_update,
+            "libraryName": self._libraryName,
+            "days_left": self._days_left,
+            "lowest_till_date": self._lowest_till_date,
+            "num_loans": self._num_loans,
+            "loandetails": self._loandetails
+        }
+        
+
+    @property
+    def device_info(self) -> dict:
+        """I can't remember why this was needed :D"""
+        return {
+            "identifiers": {(DOMAIN, self.unique_id)},
+            "name": self.name,
+            "manufacturer": DOMAIN,
+        }
+
+    @property
+    def unit(self) -> int:
+        """Unit"""
+        return int
+
+    @property
+    def unit_of_measurement(self) -> str:
+        """Return the unit of measurement this sensor expresses itself in."""
+        return "days"
 
     @property
     def friendly_name(self) -> str:
