@@ -122,7 +122,7 @@ class ComponentSession(object):
                     # "history": "https://bibliotheek.be/mijn-bibliotheek/lidmaatschappen/1234567/leenhistoriek"
                 # },
                 # "reservations": {
-                    # "reserveration": 0,
+                    # "reservations": 0,
                     # "url": "https://bibliotheek.be/mijn-bibliotheek/lidmaatschappen/1234567/reservaties"
                 # },
                 # "open_amounts": {
@@ -188,7 +188,7 @@ class ComponentSession(object):
                 open_amounts_url = ""
 
             _LOGGER.debug(f"uitleningen {loans} , url: {loans_url}, reservatie: {reservations}, url {account_url}, account_details {account_details}")
-            self.userdetails[account_details.get('id')]={'account_details': account_details , 'loans': { 'loans': loans, 'url': loans_url, 'history': loan_history_url}, 'reservations': {'reserveration': reservations, 'url':reservations_url}, 'open_amounts': {'open_amounts': open_amounts, 'url':''}}
+            self.userdetails[account_details.get('id')]={'account_details': account_details , 'loans': { 'loans': loans, 'url': loans_url, 'history': loan_history_url}, 'reservations': {'reservations': reservations, 'url':reservations_url}, 'open_amounts': {'open_amounts': open_amounts, 'url':''}}
         _LOGGER.debug(f"self.userdetails {json.dumps(self.userdetails,indent=4)}")
         return self.userdetails
         

@@ -51,6 +51,8 @@ async def dry_setup(hass, config_entry, async_add_devices):
         sensors.append(sensorUser)
     async_add_devices(sensors)
 
+#TODO: sensor per library (total items loand from library), attribute: number of each type lended
+#TODO: sensor per type of loan (eg total 5 books lended, 3 DVDs, etc)
 
 async def async_setup_platform(
     hass, config_entry, async_add_devices, discovery_info=None
@@ -139,7 +141,7 @@ class ComponentUserSensor(Entity):
         self._barcode = self._data._userdetails.get(self._userid).get('account_details').get('barcode')
         self._username = self._data._userdetails.get(self._userid).get('account_details').get('userName')
         self._libraryName = self._data._userdetails.get(self._userid).get('account_details').get('libraryName')
-        self._loandetails = self._data._loandetails
+        self._loandetails = self._data._loandetails.get(self._userid)
 
     @property
     def state(self):
@@ -156,7 +158,7 @@ class ComponentUserSensor(Entity):
         self._barcode = self._data._userdetails.get(self._userid).get('account_details').get('barcode')
         self._username = self._data._userdetails.get(self._userid).get('account_details').get('userName')
         self._libraryName = self._data._userdetails.get(self._userid).get('account_details').get('libraryName')
-        self._loandetails = self._data._loandetails
+        self._loandetails = self._data._loandetails.get(self._userid)
         
         
     async def async_will_remove_from_hass(self):
