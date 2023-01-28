@@ -47,7 +47,7 @@ async def dry_setup(hass, config_entry, async_add_devices):
     
     for userid, userdetail in componentData._userdetails.items():
         sensorUser = ComponentUserSensor(componentData, hass, userid)
-        _LOGGER.info(f"{NAME} Init sensor for user {id}")
+        _LOGGER.info(f"{NAME} Init sensor for user {userid}")
         sensors.append(sensorUser)
         
     library_names = set()
