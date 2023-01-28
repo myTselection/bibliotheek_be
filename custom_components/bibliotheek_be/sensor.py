@@ -266,16 +266,19 @@ class ComponentDateSensor(Entity):
         
         
         for name, loan_data in self._data._loandetails.items():
-            library_name_loop = loan_data('library')
+            library_name_loop = loan_data.get('library')
             if library_name_loop == self._libraryName:
-                if (self._days_left is None) or (self._days_left > loan_data('days_remaining')):
-                    self._days_left = loan_data('days_remaining')
-                    self._lowest_till_date = loan_data('loan_till')
+                if (self._days_left is None) or (self._days_left > loan_data.get('days_remaining')):
+                    self._days_left = loan_data.get('days_remaining')
+                    self._lowest_till_date = loan_data.get('loan_till')
                     self._loandetails.append(loan_data)
                     ++ self._num_loans
-                if self._days_left == loan_data('days_remaining'):
+                if self._days_left == loan_data.get('days_remaining'):
                     self._loandetails.append(loan_data)
                     ++ self._num_loans
+                    
+                #TODO add total number of loans
+                #TODO add number of loans per type
         
         
     async def async_will_remove_from_hass(self):
