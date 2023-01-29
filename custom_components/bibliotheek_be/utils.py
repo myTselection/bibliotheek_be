@@ -84,14 +84,15 @@ class ComponentSession(object):
         response = self.s.get(login_location,headers=header,timeout=10,allow_redirects=False)
         login_callback_location = response.headers.get('location')
         _LOGGER.debug(f"bibliotheek.be login callback get result status code: {response.status_code}")
-        _LOGGER.debug(f"bibliotheek.be login callback get header: {response.headers}")
-        assert response.status_code == 302
-        
-        # request access code, https://mijn.bibliotheek.be/openbibid-api.html#_authenticatie
-        data = {"hint": hint, "token": oauth_token, "callback":"https://bibliotheek.be/my-library/login/callback", "email": username, "password": password}
-        response = self.s.post('https://mijn.bibliotheek.be/openbibid/rest/accessToken',headers=header,data=data,timeout=10,allow_redirects=False)
-        _LOGGER.debug(f"bibliotheek.be login get result status code: {response.status_code}")
-       
+        _LOGGER.debug(f"bibliotheek.be login callback get header: {response.headers} text {response.text}")
+        if response.status_code == 302:        
+            # request access code, https://mijn.bibliotheek.be/openbibid-api.html#_authenticatie
+            data = {"hint": hint, "token": oauth_token, "callback":"https://bibliotheek.be/my-library/login/callback", "email": username, "password": password}
+            response = self.s.post('https://mijn.bibliotheek.be/openbibid/rest/accessToken',headers=header,data=data,timeout=10,allow_redirects=False)
+            _LOGGER.debug(f"bibliotheek.be login get result status code: {response.status_code}")
+        else:
+            #login session was already available
+            login_callback_location = "https://bibliotheek.be/mijn-bibliotheek/lidmaatschappen"
         #lidmaatschap based on url in location of response received
         response = self.s.get(f"{login_callback_location}",headers=header,timeout=10,allow_redirects=False)
         lidmaatschap_response_header = response.headers
@@ -241,10 +242,15 @@ class ComponentSession(object):
 
         #iterate through each account
         for div in libs:
-            libname = div.find('h2').text
+            # not working as within same loan-wrapper multiple libraries can appear
+            # libname = div.find('h2').text         
             
             books = div.find_all('div', class_='my-library-user-library-account-loans__loan')
             for book in books:
+                try:
+                    libname = book.find('h3', class_='my-library-user-library-account-loans__loan-title').a.get('href').split('.')[0].split('//')[1].title()
+                except AttributeError:
+                    libname = ""
                 try:
                     title = book.find('h3', class_='my-library-user-library-account-loans__loan-title').a.text.strip()
                 except AttributeError:
@@ -264,7 +270,7 @@ class ComponentSession(object):
                 try:
                     loan_type = book.find('div', class_='my-library-user-library-account-loans__loan-type-label').text
                 except AttributeError:
-                    loan_type = ""
+                    loan_type = "Unknown"
                 try:
                     days_remaining = book.find('div', class_='my-library-user-library-account-loans__loan-days').text.strip()
                     days_remaining = int(days_remaining.lower().replace('nog ','').replace(' dagen',''))
@@ -287,7 +293,7 @@ class ComponentSession(object):
                     extend_loan_id = ""
                 #example extension
                 # https://bibliotheek.be/mijn-bibliotheek/lidmaatschappen/1544061/uitleningen/verlengen?loan-ids=14870745%2C14871363%2C15549439%2C15707198%2C15933330%2C15938501%2C16370683%2C16490618%2C16584912%2C15468349%2C23001576%2C26583345
-                loandetails[f"{title}-{author}"] = {'title': title, 'author': author, 'loan_type': loan_type, 'url': url, 'image_src': image_src, 'days_remaining': days_remaining, 'loan_from': loan_from, 'loan_till': loan_till, 'extend_loan_id':extend_loan_id, 'library': libname}
+                loandetails[f"{title} ~ {author}"] = {'title': title, 'author': author, 'loan_type': loan_type, 'url': url, 'image_src': image_src, 'days_remaining': days_remaining, 'loan_from': loan_from, 'loan_till': loan_till, 'extend_loan_id':extend_loan_id, 'library': libname}
         # _LOGGER.info(f"loandetails {loandetails}") 
         _LOGGER.debug(f"loandetails {json.dumps(loandetails,indent=4)}") 
         return loandetails
@@ -338,5 +344,5 @@ class ComponentSession(object):
             assert response.status_code == 200
         #example extension
         # https://bibliotheek.be/mijn-bibliotheek/lidmaatschappen/1544061/uitleningen/verlengen?loan-ids=14870745%2C14871363%2C15549439%2C15707198%2C15933330%2C15938501%2C16370683%2C16490618%2C16584912%2C15468349%2C23001576%2C26583345
-        # _LOGGER.info(f"self.loandetails {self.loandetails}") 
+        _LOGGER.debug(f"self.loandetails {self.loandetails}") 
         return num_id_found

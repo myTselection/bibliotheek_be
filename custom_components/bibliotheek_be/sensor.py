@@ -45,19 +45,29 @@ async def dry_setup(hass, config_entry, async_add_devices):
     assert componentData._userdetails is not None
     assert componentData._loandetails is not None
     
+    
+    _LOGGER.debug(f"userdetails dry_setup {json.dumps(componentData._userdetails,indent=4)}") 
+    
+    _LOGGER.debug(f"loandetails dry_setup {json.dumps(componentData._loandetails,indent=4)}") 
+    
     for userid, userdetail in componentData._userdetails.items():
         sensorUser = ComponentUserSensor(componentData, hass, userid)
-        _LOGGER.info(f"{NAME} Init sensor for user {userid}")
+        _LOGGER.debug(f"{NAME} Init sensor for user {userid}")
         sensors.append(sensorUser)
         
     library_names = set()
-    for user_id, user_data in componentData._userdetails.items():
-        libraryName = user_data.get('account_details').get('libraryName')
-        library_names.add(libraryName)
+    loan_types = dict()
+    for user_id, loan_data in componentData._loandetails.items():
+        for loan_id, loan_item in loan_data.items():
+            libraryName = loan_item.get('library')
+            library_names.add(libraryName)
+            loan_type = loan_item.get('loan_type')
+            loan_types[loan_type] = 0
+    _LOGGER.debug(f"loan_types dry_setup {json.dumps(loan_types,indent=4)}") 
         
     for libraryName in library_names:
-        sensorDate = ComponentDateSensor(componentData, hass, libraryName)
-        _LOGGER.info(f"{NAME} Init sensor for date {libraryName}")
+        sensorDate = ComponentLibrarySensor(componentData, hass, libraryName, loan_types)
+        _LOGGER.debug(f"{NAME} Init sensor for date {libraryName}")
         sensors.append(sensorDate)
         
     async_add_devices(sensors)
@@ -105,20 +115,21 @@ class ComponentData:
         
     # same as update, but without throttle to make sure init is always executed
     async def _force_update(self):
-        _LOGGER.info("Fetching intit stuff for " + NAME)
+        _LOGGER.info("Fetching update stuff for " + NAME)
         if not(self._session):
             self._session = ComponentSession()
 
         if self._session:
             self._userdetails = await self._hass.async_add_executor_job(lambda: self._session.login(self._username, self._password))
             assert self._userdetails is not None
-            _LOGGER.info(f"{NAME} init login completed")
+            _LOGGER.info(f"{NAME} update login completed")
             for user_id, userdetail in self._userdetails.items():
                 url = userdetail.get('loans').get('url')
                 if url:
-                    _LOGGER.info(f"calling loan details")
+                    _LOGGER.info(f"calling loan details {userdetail.get('account_details').get('userName')}")
                     loandetails = await self._hass.async_add_executor_job(lambda: self._session.loan_details(url))
                     assert loandetails is not None
+                    # loandetails["user"] = userdetail.get('account_details').get('userName')
                     _LOGGER.debug(f"loandetails {json.dumps(loandetails,indent=4)}") 
                     # _LOGGER.info(f"calling extend_all")
                     # num_extensions = self.session.extend_all(url, False)
@@ -244,8 +255,8 @@ class ComponentUserSensor(Entity):
         return self.name
         
 
-class ComponentDateSensor(Entity):
-    def __init__(self, data, hass, libraryName):
+class ComponentLibrarySensor(Entity):
+    def __init__(self, data, hass, libraryName, loanTypes):
         self._data = data
         self._hass = hass
         self._libraryName = libraryName
@@ -253,7 +264,11 @@ class ComponentDateSensor(Entity):
         self._lowest_till_date = None
         self._days_left = None
         self._loandetails = []
+        self._loandetails_all = []
         self._num_loans = 0
+        self._num_total_loans = 0
+        self._loantypes = loanTypes
+            
 
     @property
     def state(self):
@@ -263,22 +278,32 @@ class ComponentDateSensor(Entity):
     async def async_update(self):
         await self._data.update()
         self._last_update =  self._data._lastupdate;
+        self._loandetails = []
+        self._loandetails_all = []
+        self._loantypes= {key: 0 for key in self._loantypes}
+        self._num_loans = 0
+        self._num_total_loans = 0
         
-        
-        for name, loan_data in self._data._loandetails.items():
-            library_name_loop = loan_data.get('library')
-            if library_name_loop == self._libraryName:
-                if (self._days_left is None) or (self._days_left > loan_data.get('days_remaining')):
-                    self._days_left = loan_data.get('days_remaining')
-                    self._lowest_till_date = loan_data.get('loan_till')
-                    self._loandetails.append(loan_data)
-                    ++ self._num_loans
-                if self._days_left == loan_data.get('days_remaining'):
-                    self._loandetails.append(loan_data)
-                    ++ self._num_loans
-                    
-                #TODO add total number of loans
-                #TODO add number of loans per type
+        for user_id, loan_data in self._data._loandetails.items():
+            _LOGGER.debug(f"library loop {user_id} {self._libraryName}") 
+            for loan_id, loan_item in loan_data.items():
+                library_name_loop = loan_item.get('library')
+                if library_name_loop == self._libraryName:
+                    _LOGGER.debug(f"library_name_loop {library_name_loop} {self._libraryName}") 
+                    self._num_total_loans += 1
+                    self._loantypes[loan_item.get('loan_type')] += 1
+                    self._loandetails_all.append(loan_item)
+                    if (self._days_left is None) or (self._days_left > loan_item.get('days_remaining')):
+                        _LOGGER.debug(f"library_name_loop less days {library_name_loop} {loan_item}")
+                        self._days_left = loan_item.get('days_remaining')
+                        self._lowest_till_date = loan_item.get('loan_till')
+                        self._loandetails = []
+                        self._loandetails.append(loan_item)
+                        self._num_loans = 1
+                    if self._days_left == loan_item.get('days_remaining'):
+                        _LOGGER.debug(f"library_name_loop same days {library_name_loop} {loan_item}")
+                        self._loandetails.append(loan_item)
+                        self._num_loans += 1
         
         
     async def async_will_remove_from_hass(self):
@@ -296,7 +321,7 @@ class ComponentDateSensor(Entity):
     def unique_id(self) -> str:
         """Return the name of the sensor."""
         return (
-            f"{NAME} {self._libraryName}"
+            f"{NAME} Bib {self._libraryName}"
         )
 
     @property
@@ -306,16 +331,21 @@ class ComponentDateSensor(Entity):
     @property
     def extra_state_attributes(self) -> dict:
         """Return the state attributes."""
-        return {
+        attributes = {
             ATTR_ATTRIBUTION: NAME,
             "last update": self._last_update,
             "libraryName": self._libraryName,
             "days_left": self._days_left,
             "lowest_till_date": self._lowest_till_date,
             "num_loans": self._num_loans,
-            "loandetails": self._loandetails
+            "num_total_loans": self._num_total_loans,
+            "loandetails": self._loandetails,
+            "loandetails_all": self._loandetails_all
+            
         }
-        
+        attributes.update(self._loantypes)
+        return attributes
+        _num_total_loans
 
     @property
     def device_info(self) -> dict:
