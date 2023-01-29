@@ -1,6 +1,7 @@
 import unittest
 import requests
 import logging
+import json
 # from "../custom_components/bibliotheek_be/utils" import .
 import sys
 sys.path.append('../custom_components/bibliotheek_be/')
@@ -20,17 +21,24 @@ class TestComponentSession(unittest.TestCase):
         # Test successful login
         self.session.login(USERNAME, PASSWORD)
         self.assertIsNotNone(self.session.userdetails)
+        _LOGGER.debug(f"self.session.userdetails {json.dumps(self.session.userdetails,indent=4)}")
         # _LOGGER.debug(f"userdetails: {self.session.userdetails}")
         
         for id, userdetail in self.session.userdetails.items():
             # _LOGGER.info(f"userdetail: {userdetail}")
             url = userdetail.get('loans').get('url')
-            _LOGGER.info(f"url: {url}")
+            _LOGGER.info(f"id {id}, userdetail: {self.session.userdetails}")
+            _LOGGER.info(f"userdetail: {self.session.userdetails.get(id).get('account_details').get('barcode')}")
             
             if url:
                 _LOGGER.info(f"calling loan details")
                 loandetails = self.session.loan_details(url)
+                _LOGGER.debug(f"loandetails {json.dumps(loandetails,indent=4)}") 
                 self.assertIsNotNone(loandetails)
+                
+                _LOGGER.info(f"calling extend_all")
+                num_extensions = self.session.extend_all(url, False)
+                _LOGGER.info(f"num of extensions found: {num_extensions}")
                 
         # Test login failure
         self.session = ComponentSession()

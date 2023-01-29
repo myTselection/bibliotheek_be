@@ -30,25 +30,22 @@ The main logic and API connection related code can be found within source code b
 All other files just contain boilerplat code for the integration to work wtihin HA or to have some constants/strings/translations.
 
 ## Example usage:
-### Gauge & Markdown
+### Markdown Example for details of all libraries
 ```
-type: vertical-stack
-cards:
-  - type: markdown
-    content: >-
-      ## Bibliotheek.be {{state_attr('sensor.bibliotheek_be','TODO')}}
-
-
-
-      latst update: *{{state_attr('sensor.bibliotheek_be','last update')
-      | as_timestamp | timestamp_custom("%d-%m-%Y")}}*
-       
-      green: 0
-  - type: history-graph
-    entities:
-      - entity: sensor.bibliotheek_be
-    hours_to_show: 500
-    refresh_interval: 60
+{% set libraries = states | selectattr("entity_id", "match","^sensor.bibliotheek_be_bib*") | list %}
+{% for library_device in libraries %}
+  {% set library = library_device.entity_id %}
+  ## Bib {{state_attr(library,'libraryName') }}:
+  - {{state_attr(library,'num_loans') }} stuks in te leveren binnen **{{states(library)}}** dagen ({{state_attr(library,'lowest_till_date') }})
+  {% for book in state_attr(library,'loandetails') %}
+    - {{ book.title }} ~ {{ book.author }} ({% if book.loan_type == 'Unknown' %}Onbekend{% else %}{{book.loan_type}}{% endif %}) {# TODO {{book.user}}#}<img src="{{book.image_src}}" height="20"/>
+  {% endfor %}
+  - In totaal {{state_attr(library,'num_total_loans') }} uitgeleend:
+    - Boeken: {{state_attr(library,'Boek') }}
+    - Onbekend: {{state_attr(library,'Unknown') }}
+    - DVDs: {{state_attr(library,'Dvd') }}
+    - Strips: {{state_attr(library,'Strip') }}
+{% endfor %}
 
 ```
 
