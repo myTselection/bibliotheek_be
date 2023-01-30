@@ -32,20 +32,40 @@ All other files just contain boilerplat code for the integration to work wtihin 
 ## Example usage:
 ### Markdown Example for details of all libraries
 ```
-{% set libraries = states | selectattr("entity_id", "match","^sensor.bibliotheek_be_bib*") | list %}
-{% for library_device in libraries %}
-  {% set library = library_device.entity_id %}
-  ## Bib {{state_attr(library,'libraryName') }}:
-  - {{state_attr(library,'num_loans') }} stuks in te leveren binnen **{{states(library)}}** dagen ({{state_attr(library,'lowest_till_date') }})
-  {% for book in state_attr(library,'loandetails') %}
-    - {{ book.title }} ~ {{ book.author }} ({% if book.loan_type == 'Unknown' %}Onbekend{% else %}{{book.loan_type}}{% endif %}) {# TODO {{book.user}}#}<img src="{{book.image_src}}" height="20"/>
-  {% endfor %}
-  - In totaal {{state_attr(library,'num_total_loans') }} uitgeleend:
-    - Boeken: {{state_attr(library,'Boek') }}
-    - Onbekend: {{state_attr(library,'Unknown') }}
-    - DVDs: {{state_attr(library,'Dvd') }}
-    - Strips: {{state_attr(library,'Strip') }}
-{% endfor %}
+type: markdown
+content: >-
+  {% set libraries = states | selectattr("entity_id",
+  "match","^sensor.bibliotheek_be_bib*") | list %}
+
+  {% for library_device in libraries %}
+    {% set library = library_device.entity_id %}
+    ## Bib {{state_attr(library,'libraryName') }}:
+    - {{state_attr(library,'num_loans') }} stuks in te leveren binnen **{{states(library)}}** dagen ({{state_attr(library,'lowest_till_date') }})
+      {% set all_books = state_attr(library,'loandetails') %}
+      {% set urgent_books = all_books | selectattr("days_remaining", "eq",int(state_attr(library,'days_left'))) | list |sort(attribute="extend_loan_id", reverse=False)%}
+      {% set other_books = all_books | rejectattr("days_remaining", "eq",int(state_attr(library,'days_left'))) | list |sort(attribute="days_remaining", reverse=False)|sort(attribute="extend_loan_id", reverse=False)%}
+      {% if urgent_books %}
+      <details>
+        <summary>Toon dringende boeken ({{urgent_books|length}}):</summary>
+      {% for book in urgent_books  %}
+        - {{ book.title }} ~ {{ book.author }} ({% if book.loan_type == 'Unknown' %}Onbekend{% else %}{{book.loan_type}}{% endif %}) {% if book.extend_loan_id %}verlengbaar{% else %}**Niet verlengbaar**{% endif %}{# TODO {{book.user}}<img src="{{book.image_src}}" height="20"/>#}
+      {% endfor %}
+      </details>
+      {% endif %}
+    - In totaal {{state_attr(library,'num_total_loans') }} uitgeleend:
+      - Boeken: {{state_attr(library,'Boek') }}
+      - Onbekend: {{state_attr(library,'Unknown') }}
+      - DVDs: {{state_attr(library,'Dvd') }}
+      - Strips: {{state_attr(library,'Strip') }}
+      {% if other_books %}
+      <details>
+        <summary>Toon overige boeken ({{other_books|length}}):</summary>
+      {% for book in other_books  %}
+        - {{ book.title }} ~ {{ book.author }} ({% if book.loan_type == 'Unknown' %}Onbekend{% else %}{{book.loan_type}}{% endif %}) &rarr;  {{book.days_remaining}} dagen ({{book.loan_till}}) {% if book.extend_loan_id %}verlengbaar{% else %}**Niet verlengbaar**{% endif %}{# TODO {{book.user}}<img src="{{book.image_src}}" height="20"/>#}
+      {% endfor %}
+      </details>
+      {% endif %}
+    {% endfor %}
 
 ```
 
