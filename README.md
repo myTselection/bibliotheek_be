@@ -31,8 +31,10 @@ All other files just contain boilerplat code for the integration to work wtihin 
 
 ## Example usage:
 ### Markdown Example for details of all libraries
+
 <p align="center"><img src="https://raw.githubusercontent.com/myTselection/bibliotheek_be/master/Markdown%20Card%20example.png"/></p>
 <p align="center"><img src="https://raw.githubusercontent.com/myTselection/bibliotheek_be/master/Markdown%20Card%20details%20example.png"/></p>
+
 ```
 type: markdown
 content: >-
@@ -42,15 +44,24 @@ content: >-
   {% for library_device in libraries %}
     {% set library = library_device.entity_id %}
     ## Bib {{state_attr(library,'libraryName') }}:
-    - {{state_attr(library,'num_loans') }} stuks in te leveren binnen **{{states(library)}}** dagen ({{state_attr(library,'lowest_till_date') }})
+    - {{state_attr(library,'num_loans') }} stuks in te leveren binnen **{{states(library)}}** dagen: {{state_attr(library,'lowest_till_date') }}
       {% set all_books = state_attr(library,'loandetails') %}
       {% set urgent_books = all_books | selectattr("days_remaining", "eq",int(state_attr(library,'days_left'))) | list |sort(attribute="extend_loan_id", reverse=False)%}
       {% set other_books = all_books | rejectattr("days_remaining", "eq",int(state_attr(library,'days_left'))) | list |sort(attribute="days_remaining", reverse=False)|sort(attribute="extend_loan_id", reverse=False)%}
       {% if urgent_books %}
       <details>
-        <summary>Toon dringende boeken ({{urgent_books|length}}):</summary>
+        <summary>Toon dringende ({{urgent_books|length}}):</summary>
       {% for book in urgent_books  %}
-        - {{ book.title }} ~ {{ book.author }} ({% if book.loan_type == 'Unknown' %}Onbekend{% else %}{{book.loan_type}}{% endif %}) {% if book.extend_loan_id %}verlengbaar{% else %}**Niet verlengbaar**{% endif %}{# TODO {{book.user}}<img src="{{book.image_src}}" height="20"/>#}
+      - <details><summary>{% if book.extend_loan_id %}{{ book.loan_till }}{% else %}<b>{{ book.loan_till }}</b>{% endif %}: {{ book.title }} ~ {{ book.author }}</summary> 
+
+          |  |  |
+          | :--- | :--- |
+          | Binnen: | {{ book.days_remaining }} dagen |
+          | Verlenging: | {% if book.extend_loan_id %}verlengbaar{% else %}**Niet verlengbaar**{% endif %} |
+          | Bibliotheek: | <a href="{{book.url}}" target="_blank">{{book.library}}</a> |
+          | Type: | {% if book.loan_type == 'Unknown' %}Onbekend{% else %}{{book.loan_type}}{% endif %} |
+          | Afbeelding: | <img src="{{ book.image_src }}" height="100"/> |
+        </details>
       {% endfor %}
       </details>
       {% endif %}
@@ -61,13 +72,86 @@ content: >-
       - Strips: {{state_attr(library,'Strip') }}
       {% if other_books %}
       <details>
-        <summary>Toon overige boeken ({{other_books|length}}):</summary>
+        <summary>Toon overige ({{other_books|length}}):</summary>
       {% for book in other_books  %}
-        - {{ book.title }} ~ {{ book.author }} ({% if book.loan_type == 'Unknown' %}Onbekend{% else %}{{book.loan_type}}{% endif %}) &rarr;  {{book.days_remaining}} dagen ({{book.loan_till}}) {% if book.extend_loan_id %}verlengbaar{% else %}**Niet verlengbaar**{% endif %}{# TODO {{book.user}}<img src="{{book.image_src}}" height="20"/>#}
+      - <details><summary>{% if book.extend_loan_id %}{{ book.loan_till }}{% else %}<b>{{ book.loan_till }}</b>{% endif %}: {{ book.title }} ~ {{ book.author }}</summary> 
+
+          |  |  |
+          | :--- | :--- |
+          | Type: | {% if book.loan_type == 'Unknown' %}Onbekend{% else %}{{book.loan_type}}{% endif %} |
+          | Bibliotheek: | {{book.library}} |
+          | Verlenging: | {% if book.extend_loan_id %}verlengbaar{% else %}**Niet verlengbaar**{% endif %} |
+          | Afbeelding: | <img src="{{ book.image_src }}" height="100"/> |
+        </details>
       {% endfor %}
       </details>
       {% endif %}
     {% endfor %}
-
+title: Bibliotheken
 ```
 
+### Markdown Example for details of all users:
+
+```
+type: markdown
+content: >-
+  {% set library_users = states |
+  selectattr("entity_id","match","^sensor.bibliotheek_be_*") |
+  rejectattr("entity_id","match","^sensor.bibliotheek_be_bib*")| list%}
+
+  {% for user_device in library_users %}
+
+  {% set user = user_device.entity_id %}
+
+  {% if state_attr(user,'num_loans') > 0 %}
+
+  ## {{state_attr(user,'username') }} {{state_attr(user,'libraryName') }}
+  (Barcode: {{state_attr(user,'barcode') }}):
+
+  - Gereserveerde stuks: {{state_attr(user,'num_reservations') }}
+
+  - Uitstaande boetes: {{state_attr(user,'open_amounts') }}
+    {% if state_attr(user,'num_loans') > 0 %}
+    {% set all_books = state_attr(user,'loandetails').values()  |sort(attribute="days_remaining", reverse=False)|sort(attribute="extend_loan_id", reverse=False)%}
+  - In totaal {{state_attr(user,'num_loans') }} uitgeleend{% if all_books %}
+      {% for book in all_books %}
+      - <details><summary>{% if book.extend_loan_id %}{{ book.loan_till }}{% else %}<b>{{ book.loan_till }}</b>{% endif %}: {{ book.title }} ~ {{ book.author }}</summary> 
+
+          |  |  |
+          | :--- | :--- |
+          | Binnen: | {{ book.days_remaining }} dagen |
+          | Verlenging: | {% if book.extend_loan_id %}verlengbaar{% else %}**Niet verlengbaar**{% endif %} |
+          | Bibliotheek: | <a href="{{book.url}}" target="_blank">{{book.library}}</a> |
+          | Type: | {% if book.loan_type == 'Unknown' %}Onbekend{% else %}{{book.loan_type}}{% endif %} |
+          | Afbeelding: | <img src="{{ book.image_src }}" height="100"/> |
+        </details>
+      {% endfor %}
+    {% endif %}
+    {% else %}
+  - Geen uitleningen
+    {% endif %}
+    Laatst bijgewerkt: {{state_attr(user,'last update')  | as_timestamp | timestamp_custom("%d-%m-%Y %H:%M")}}
+  {% endif %}
+
+  {% endfor %}
+
+  {% for user_device in library_users %}
+
+  {% set user = user_device.entity_id %}
+
+  {% if state_attr(user,'num_loans') == 0 %}
+
+  ## {{state_attr(user,'username') }} {{state_attr(user,'libraryName') }}
+  (Barcode: {{state_attr(user,'barcode') }}):
+
+  - Gereserveerde stuks: {{state_attr(user,'num_reservations') }}
+
+  - Uitstaande boetes: {{state_attr(user,'open_amounts') }}
+
+  - Geen uitleningen
+    Laatst bijgewerkt: {{state_attr(user,'last update')  | as_timestamp | timestamp_custom("%d-%m-%Y %H:%M")}}
+  {% endif %}
+
+  {% endfor %}
+title: Gebruikers
+```
