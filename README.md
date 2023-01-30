@@ -18,8 +18,8 @@
 - Add 'Bibliotheek.be' integration via HA Settings > 'Devices and Services' > 'Integrations'
 - Provide Bibliotheek.be username and password
 - Sensor `Bibliotheek.be` should become available with the number of items lent out.
-  - sensor.bibliotheek_be_<username>_<library> will be created for each user linked to the account
-  - sensor.bibliotheek_be_bib_<library> will be created for each library
+  - sensor.bibliotheek_be_`<username>`_`<library>` will be created for each user linked to the account
+  - sensor.bibliotheek_be_bib_`<library>` will be created for each library
 
 ## Status
 Still some optimisations are planned, see [Issues](https://github.com/myTselection/bibliotheek_be/issues) section in GitHub.
