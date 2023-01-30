@@ -6,8 +6,8 @@
 [![GitHub last commit](https://img.shields.io/github/last-commit/myTselection/bibliotheek_be.svg)](https://github.com/myTselection/bibliotheek_be/commits/master)
 [![GitHub commit activity](https://img.shields.io/github/commit-activity/m/myTselection/bibliotheek_be.svg)](https://github.com/myTselection/bibliotheek_be/graphs/commit-activity)
 
-# Bibliotheek.be (Beta)
-[bibliotheek.be](https://www.bibliotheek.be/) Home Assistant custom component
+# Bibliotheek.be
+[bibliotheek.be](https://www.bibliotheek.be/) Home Assistant custom component. It provides a clear overview of all items loaned a the different libraries by different users linked to the main account (eg children). An overview off all items per library or an overview of all items per user can be shown, see complex markdown examples below. Based on the sensors, automations can be build to get warned: eg when little time is left and certainly when extension is not possible.
 
 <p align="center"><img src="https://raw.githubusercontent.com/myTselection/bibliotheek_be/master/icon.png"/></p>
 
@@ -18,6 +18,8 @@
 - Add 'Bibliotheek.be' integration via HA Settings > 'Devices and Services' > 'Integrations'
 - Provide Bibliotheek.be username and password
 - Sensor `Bibliotheek.be` should become available with the number of items lent out.
+  - sensor.bibliotheek_be_<username>_<library> will be created for each user linked to the account
+  - sensor.bibliotheek_be_bib_<library> will be created for each library
 
 ## Status
 Still some optimisations are planned, see [Issues](https://github.com/myTselection/bibliotheek_be/issues) section in GitHub.
