@@ -100,7 +100,8 @@ type: markdown
 content: >-
   {% set library_users = states |
   selectattr("entity_id","match","^sensor.bibliotheek_be_*") |
-  rejectattr("entity_id","match","^sensor.bibliotheek_be_bib*")| list%}
+  rejectattr("entity_id","match","^sensor.bibliotheek_be_bib*")|
+  rejectattr("entity_id","match","^sensor.bibliotheek_be_warning")| list%}
 
   {% for user_device in library_users %}
 
