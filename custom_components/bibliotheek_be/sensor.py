@@ -264,7 +264,6 @@ class ComponentLibrarySensor(Entity):
         self._lowest_till_date = None
         self._days_left = None
         self._loandetails = []
-        self._loandetails_all = []
         self._num_loans = 0
         self._num_total_loans = 0
         self._loantypes = loanTypes
@@ -279,7 +278,6 @@ class ComponentLibrarySensor(Entity):
         await self._data.update()
         self._last_update =  self._data._lastupdate;
         self._loandetails = []
-        self._loandetails_all = []
         self._loantypes= {key: 0 for key in self._loantypes}
         self._num_loans = 0
         self._num_total_loans = 0
@@ -292,17 +290,14 @@ class ComponentLibrarySensor(Entity):
                     _LOGGER.debug(f"library_name_loop {library_name_loop} {self._libraryName}") 
                     self._num_total_loans += 1
                     self._loantypes[loan_item.get('loan_type')] += 1
-                    self._loandetails_all.append(loan_item)
+                    self._loandetails.append(loan_item)
                     if (self._days_left is None) or (self._days_left > loan_item.get('days_remaining')):
                         _LOGGER.debug(f"library_name_loop less days {library_name_loop} {loan_item}")
                         self._days_left = loan_item.get('days_remaining')
                         self._lowest_till_date = loan_item.get('loan_till')
-                        self._loandetails = []
-                        self._loandetails.append(loan_item)
                         self._num_loans = 1
                     if self._days_left == loan_item.get('days_remaining'):
                         _LOGGER.debug(f"library_name_loop same days {library_name_loop} {loan_item}")
-                        self._loandetails.append(loan_item)
                         self._num_loans += 1
         
         
@@ -339,8 +334,7 @@ class ComponentLibrarySensor(Entity):
             "lowest_till_date": self._lowest_till_date,
             "num_loans": self._num_loans,
             "num_total_loans": self._num_total_loans,
-            "loandetails": self._loandetails,
-            "loandetails_all": self._loandetails_all
+            "loandetails": self._loandetails
             
         }
         attributes.update(self._loantypes)
