@@ -155,6 +155,7 @@ class ComponentUserSensor(Entity):
         self._hass = hass
         self._userid = userid
         self._last_update = None
+        self._loandetails = None
         
         # _LOGGER.info(f"init sensor userid {userid} _userdetails {self._data._userdetails}")
         self._num_loans = self._data._userdetails.get(self._userid).get('loans').get('loans')
@@ -173,6 +174,7 @@ class ComponentUserSensor(Entity):
     async def async_update(self):
         await self._data.update()
         self._last_update =  self._data._lastupdate;
+        self._loandetails = None
         
         self._num_loans = self._data._userdetails.get(self._userid).get('loans').get('loans')
         self._num_reservations = self._data._userdetails.get(self._userid).get('reservations').get('reservations')
