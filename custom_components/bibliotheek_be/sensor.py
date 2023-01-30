@@ -70,6 +70,9 @@ async def dry_setup(hass, config_entry, async_add_devices):
         _LOGGER.debug(f"{NAME} Init sensor for date {libraryName}")
         sensors.append(sensorDate)
         
+    sensorLibrariesWarning = ComponentLibrariesWarningSensor(componentData, hass)
+    sensors.append(sensorLibrariesWarning)
+        
     async_add_devices(sensors)
 
 #TODO: sensor per library (total items loand from library), attribute: number of each type lended
@@ -265,6 +268,7 @@ class ComponentLibrarySensor(Entity):
         self._last_update = None
         self._lowest_till_date = None
         self._days_left = None
+        self._some_not_extendable = False
         self._loandetails = []
         self._num_loans = 0
         self._num_total_loans = 0
@@ -283,6 +287,7 @@ class ComponentLibrarySensor(Entity):
         self._loantypes= {key: 0 for key in self._loantypes}
         self._num_loans = 0
         self._num_total_loans = 0
+        self._some_not_extendable = False
         
         for user_id, loan_data in self._data._loandetails.items():
             _LOGGER.debug(f"library loop {user_id} {self._libraryName}") 
@@ -298,9 +303,13 @@ class ComponentLibrarySensor(Entity):
                         self._days_left = loan_item.get('days_remaining')
                         self._lowest_till_date = loan_item.get('loan_till')
                         self._num_loans = 1
+                        if loan_item.get('extend_loan_id') == '':
+                            self._some_not_extendable = True
                     if self._days_left == loan_item.get('days_remaining'):
                         _LOGGER.debug(f"library_name_loop same days {library_name_loop} {loan_item}")
                         self._num_loans += 1
+                        if loan_item.get('extend_loan_id') == '':
+                            self._some_not_extendable = True
         
         
     async def async_will_remove_from_hass(self):
@@ -333,6 +342,7 @@ class ComponentLibrarySensor(Entity):
             "last update": self._last_update,
             "libraryName": self._libraryName,
             "days_left": self._days_left,
+            "some_not_extendable": self._some_not_extendable,
             "lowest_till_date": self._lowest_till_date,
             "num_loans": self._num_loans,
             "num_total_loans": self._num_total_loans,
@@ -341,7 +351,115 @@ class ComponentLibrarySensor(Entity):
         }
         attributes.update(self._loantypes)
         return attributes
-        _num_total_loans
+
+    @property
+    def device_info(self) -> dict:
+        """I can't remember why this was needed :D"""
+        return {
+            "identifiers": {(DOMAIN, self.unique_id)},
+            "name": self.name,
+            "manufacturer": DOMAIN,
+        }
+
+    @property
+    def unit(self) -> int:
+        """Unit"""
+        return int
+
+    @property
+    def unit_of_measurement(self) -> str:
+        """Return the unit of measurement this sensor expresses itself in."""
+        return "days"
+
+    @property
+    def friendly_name(self) -> str:
+        return self.name
+        
+        
+class ComponentLibrariesWarningSensor(Entity):
+    def __init__(self, data, hass):
+        self._data = data
+        self._hass = hass
+        self._last_update = None
+        self._lowest_till_date = None
+        self._days_left = None
+        self._some_not_extendable = False
+        self._num_loans = 0  
+        self._num_total_loans = 0
+        self._library_name = ""
+
+    @property
+    def state(self):
+        """Return the state of the sensor."""
+        return self._days_left
+
+    async def async_update(self):
+        await self._data.update()
+        self._last_update =  self._data._lastupdate;
+        self._num_loans = 0
+        self._num_total_loans = 0
+        self._some_not_extendable = False
+        self._library_name = ""
+        
+        for user_id, loan_data in self._data._loandetails.items():
+            _LOGGER.debug(f"library warning loop {user_id}") 
+            for loan_id, loan_item in loan_data.items():
+                library_name_loop = loan_item.get('library')
+                _LOGGER.debug(f"library_name_loop {library_name_loop}") 
+                self._num_total_loans += 1
+                if loan_item.get('days_remaining') and ((self._days_left is None) or (self._days_left > loan_item.get('days_remaining'))):
+                    _LOGGER.debug(f"library_name_loop less days {library_name_loop} {loan_item}")
+                    self._days_left = loan_item.get('days_remaining')
+                    self._lowest_till_date = loan_item.get('loan_till')
+                    self._num_loans = 1
+                    self._library_name = f"{loan_item.get('library')}"
+                    if loan_item.get('extend_loan_id') == '':
+                        self._some_not_extendable = True
+                if self._days_left == loan_item.get('days_remaining'):
+                    _LOGGER.debug(f"library_name_loop same days {library_name_loop} {loan_item}")
+                    self._num_loans += 1
+                    if loan_item.get('library') and loan_item.get('library') not in self._library_name:
+                        self._library_name += f", {loan_item.get('library')}"
+                    if loan_item.get('extend_loan_id') == '':
+                        self._some_not_extendable = True
+        
+        
+    async def async_will_remove_from_hass(self):
+        """Clean up after entity before removal."""
+        _LOGGER.info("async_will_remove_from_hass " + NAME)
+        self._data.clear_session()
+
+
+    @property
+    def icon(self) -> str:
+        """Shows the correct icon for container."""
+        return "mdi:bookshelf"
+        
+    @property
+    def unique_id(self) -> str:
+        """Return the name of the sensor."""
+        return (
+            f"{NAME} warning"
+        )
+
+    @property
+    def name(self) -> str:
+        return self.unique_id
+
+    @property
+    def extra_state_attributes(self) -> dict:
+        """Return the state attributes."""
+        attributes = {
+            ATTR_ATTRIBUTION: NAME,
+            "last update": self._last_update,
+            "days_left": self._days_left,
+            "some_not_extendable": self._some_not_extendable,
+            "lowest_till_date": self._lowest_till_date,
+            "num_loans": self._num_loans,
+            "num_total_loans": self._num_total_loans,
+            "library_name":  self._library_name
+        }
+        return attributes
 
     @property
     def device_info(self) -> dict:

@@ -20,6 +20,7 @@
 - Sensor `Bibliotheek.be` should become available with the number of items lent out.
   - sensor.bibliotheek_be_`<username>`_`<library>` will be created for each user linked to the account
   - sensor.bibliotheek_be_bib_`<library>` will be created for each library
+  - sensor.bibliotheek_be_warning will indicate if within how many days some items have to be returned at *any* library (this can be used of conditions, notifications, etc).
 
 ## Status
 Still some optimisations are planned, see [Issues](https://github.com/myTselection/bibliotheek_be/issues) section in GitHub.
@@ -156,4 +157,47 @@ content: >-
 
   {% endfor %}
 title: Gebruikers
+```
+
+### Example with conditional check for warnings:
+
+## Extra binary sensor based on personal perference on number of days to limit the warning
+Example provided with sensor that will turn on if items have to be returned within 7 days. The alert sensor will be turned on if items have to be returned within 7 days and no extension is possible.
+`configuration.yaml`:
+```
+binary_sensor:
+  - platform: template
+    sensors:
+      bibliotheek_warning_7d:
+        friendly_name: Bibliotheek Warning 7d
+        value_template: >
+           {{states('sensor.bibliotheek_be_warning')|int <= 7}}
+  - platform: template
+    sensors:
+      bibliotheek_alert_7d:
+        friendly_name: Bibliotheek Alert 7d
+        value_template: >
+           {{states('sensor.bibliotheek_be_warning')|int <= 7 and state_attr('sensor.bibliotheek_be_warning','some_not_extendable') == True}}
+```
+Base on these sensors, a automation can be build for notifications or below conditional card can be defined:
+
+```
+- type: conditional
+conditions:
+  - entity: binary_sensor.bibliotheek_warning_7d
+	state: 'on'
+  - entity: binary_sensor.bibliotheek_alert_7d
+	state: 'off'
+card:
+  type: markdown
+  content: ⏰Boeken verlengen deze week !
+- type: conditional
+conditions:
+  - entity: binary_sensor.bibliotheek_warning_7d
+	state: 'on'
+  - entity: binary_sensor.bibliotheek_alert_7d
+	state: 'on'
+card:
+  type: markdown
+  content: ⏰Boeken binnen brengen deze week !
 ```
