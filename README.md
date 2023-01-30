@@ -31,6 +31,8 @@ All other files just contain boilerplat code for the integration to work wtihin 
 
 ## Example usage:
 ### Markdown Example for details of all libraries
+<p align="center"><img src="https://raw.githubusercontent.com/myTselection/bibliotheek_be/master/Markdown%20Card%20example.png"/></p>
+<p align="center"><img src="https://raw.githubusercontent.com/myTselection/bibliotheek_be/master/Markdown%20Card%20details%20example.png"/></p>
 ```
 type: markdown
 content: >-
@@ -69,4 +71,3 @@ content: >-
 
 ```
 
-<p align="center"><img src="https://raw.githubusercontent.com/myTselection/bibliotheek_be/master/Markdown%20Gauge%20Card%20example.png"/></p>
