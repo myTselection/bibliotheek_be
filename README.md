@@ -44,16 +44,16 @@ content: >-
   {% for library_device in libraries %}
     {% set library = library_device.entity_id %}
     ## Bib {{state_attr(library,'libraryName') }}:
+    {% set all_books = state_attr(library,'loandetails') %}
+    {% set urgent_books = all_books | selectattr("days_remaining", "eq",int(state_attr(library,'days_left'))) | list |sort(attribute="extend_loan_id", reverse=False)%}
+    {% set other_books = all_books | rejectattr("days_remaining", "eq",int(state_attr(library,'days_left'))) | list |sort(attribute="days_remaining", reverse=False)|sort(attribute="extend_loan_id", reverse=False)%}
+    {% if urgent_books %}
     - {{state_attr(library,'num_loans') }} stuks in te leveren binnen **{{states(library)}}** dagen: {{state_attr(library,'lowest_till_date') }}
-      {% set all_books = state_attr(library,'loandetails') %}
-      {% set urgent_books = all_books | selectattr("days_remaining", "eq",int(state_attr(library,'days_left'))) | list |sort(attribute="extend_loan_id", reverse=False)%}
-      {% set other_books = all_books | rejectattr("days_remaining", "eq",int(state_attr(library,'days_left'))) | list |sort(attribute="days_remaining", reverse=False)|sort(attribute="extend_loan_id", reverse=False)%}
-      {% if urgent_books %}
       <details>
         <summary>Toon dringende ({{urgent_books|length}}):</summary>
-      {% for book in urgent_books  %}
-      - <details><summary>{% if book.extend_loan_id %}{{ book.loan_till }}{% else %}<b>{{ book.loan_till }}</b>{% endif %}: {{ book.title }} ~ {{ book.author }}</summary> 
-
+        {% for book in urgent_books  %}
+        - <details><summary>{% if book.extend_loan_id %}{{ book.loan_till }}{% else %}<b>{{ book.loan_till }}</b>{% endif %}: {{ book.title }} ~ {{ book.author }}</summary> 
+    
           |  |  |
           | :--- | :--- |
           | Binnen: | {{ book.days_remaining }} dagen |
@@ -61,10 +61,10 @@ content: >-
           | Bibliotheek: | <a href="{{book.url}}" target="_blank">{{book.library}}</a> |
           | Type: | {% if book.loan_type == 'Unknown' %}Onbekend{% else %}{{book.loan_type}}{% endif %} |
           | Afbeelding: | <img src="{{ book.image_src }}" height="100"/> |
-        </details>
-      {% endfor %}
+          </details>
+        {% endfor %}
       </details>
-      {% endif %}
+    {% endif %}
     - In totaal {{state_attr(library,'num_total_loans') }} uitgeleend:
       - Boeken: {{state_attr(library,'Boek') }}
       - Onbekend: {{state_attr(library,'Unknown') }}
@@ -78,9 +78,9 @@ content: >-
 
           |  |  |
           | :--- | :--- |
-          | Type: | {% if book.loan_type == 'Unknown' %}Onbekend{% else %}{{book.loan_type}}{% endif %} |
-          | Bibliotheek: | {{book.library}} |
           | Verlenging: | {% if book.extend_loan_id %}verlengbaar{% else %}**Niet verlengbaar**{% endif %} |
+          | Bibliotheek: | <a href="{{book.url}}" target="_blank">{{book.library}}</a> |
+          | Type: | {% if book.loan_type == 'Unknown' %}Onbekend{% else %}{{book.loan_type}}{% endif %} |
           | Afbeelding: | <img src="{{ book.image_src }}" height="100"/> |
         </details>
       {% endfor %}
