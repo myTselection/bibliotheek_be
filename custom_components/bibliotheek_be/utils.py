@@ -299,6 +299,103 @@ class ComponentSession(object):
         return loandetails
         
 
+    def extend_single_item(self, url, extend_loan_id, execute):
+        loandetails = dict()
+        header = {"Content-Type": "application/json"}
+
+        _LOGGER.debug(f"extend_single_item URL {url}")
+        #lidmaatschap based on url in location of response received
+        # response = self.s.get(f"{url}",headers=header,timeout=10,allow_redirects=False)
+        # loan_details_response_header = response.headers
+        # _LOGGER.debug(f"bibliotheek.be lidmaatschap get result status code: {response.status_code} response: {response.text}")
+        # _LOGGER.debug(f"bibliotheek.be lidmaatschap get header: {response.headers}")
+        # assert response.status_code == 200
+        # soup = BeautifulSoup(response.text, 'html.parser')
+        
+        extend_loan_ids = f"{url}/velengen?loan-ids="
+        num_id_found = 0
+        
+        #find all libs
+        # libs = soup.find_all('div', class_='my-library-user-library-account-loans__loan-wrapper')
+        # _LOGGER.debug(f"accounts found: {accounts}")
+
+        #iterate through each account
+        # for div in libs:
+            # libname = div.find('h2').text
+            
+            # books = div.find_all('div', class_='my-library-user-library-account-loans__loan')
+            # for book in books:
+                # try:
+                    # extend_loan_id = book.find('div', class_='my-library-user-library-account-loans__extend-loan')
+                    # extend_loan_id = extend_loan_id.select_one('input[type="checkbox"]')['id']
+                    # if request_extend_id == extend_loan_id:
+                        # if num_id_found == 0:
+        extend_loan_ids += f"{extend_loan_id}"
+                        # else:
+                            # extend_loan_ids += f"%2C{extend_loan_id}"
+        num_id_found += 1
+                # except (AttributeError, TypeError):
+                    # extend_loan_id = ""
+        
+        _LOGGER.debug(f"extend_loan_ids: {extend_loan_ids}") 
+        
+        if execute:
+            response = self.s.get(f"{extend_loan_ids}",headers=header,timeout=10,allow_redirects=False)
+            assert response.status_code == 200
+        #example extension
+        # https://bibliotheek.be/mijn-bibliotheek/lidmaatschappen/1544061/uitleningen/verlengen?loan-ids=14870745%2C14871363%2C15549439%2C15707198%2C15933330%2C15938501%2C16370683%2C16490618%2C16584912%2C15468349%2C23001576%2C26583345
+        _LOGGER.debug(f"self.loandetails {self.loandetails}") 
+        return num_id_found
+        
+
+
+    def extend_multiple_ids(self, url, extend_loan_ids, execute):
+        loandetails = dict()
+        header = {"Content-Type": "application/json"}
+
+        _LOGGER.debug(f"extend_single_item URL {url}")
+        #lidmaatschap based on url in location of response received
+        # response = self.s.get(f"{url}",headers=header,timeout=10,allow_redirects=False)
+        # loan_details_response_header = response.headers
+        # _LOGGER.debug(f"bibliotheek.be lidmaatschap get result status code: {response.status_code} response: {response.text}")
+        # _LOGGER.debug(f"bibliotheek.be lidmaatschap get header: {response.headers}")
+        # assert response.status_code == 200
+        # soup = BeautifulSoup(response.text, 'html.parser')
+        
+        extend_loan_ids = f"{url}/velengen?loan-ids="
+        num_id_found = 0
+        
+        #find all libs
+        # libs = soup.find_all('div', class_='my-library-user-library-account-loans__loan-wrapper')
+        # _LOGGER.debug(f"accounts found: {accounts}")
+
+        #iterate through each account
+        # for div in libs:
+            # libname = div.find('h2').text
+            
+            # books = div.find_all('div', class_='my-library-user-library-account-loans__loan')
+        for extend_loand_id in extend_loan_ids:
+                # try:
+                    # extend_loan_id = book.find('div', class_='my-library-user-library-account-loans__extend-loan')
+                    # extend_loan_id = extend_loan_id.select_one('input[type="checkbox"]')['id']
+                    # if request_extend_id == extend_loan_id:
+            if num_id_found == 0:
+                extend_loan_ids += f"{extend_loan_id}"
+            else:
+                extend_loan_ids += f"%2C{extend_loan_id}"
+            num_id_found += 1
+                # except (AttributeError, TypeError):
+                    # extend_loan_id = ""
+        
+        _LOGGER.debug(f"extend_loan_ids: {extend_loan_ids}") 
+        
+        if execute:
+            response = self.s.get(f"{extend_loan_ids}",headers=header,timeout=10,allow_redirects=False)
+            assert response.status_code == 200
+        #example extension
+        # https://bibliotheek.be/mijn-bibliotheek/lidmaatschappen/1544061/uitleningen/verlengen?loan-ids=14870745%2C14871363%2C15549439%2C15707198%2C15933330%2C15938501%2C16370683%2C16490618%2C16584912%2C15468349%2C23001576%2C26583345
+        _LOGGER.debug(f"self.loandetails {self.loandetails}") 
+        return num_id_found
 
     def extend_all(self, url, execute):
         loandetails = dict()
@@ -330,9 +427,9 @@ class ComponentSession(object):
                     extend_loan_id = book.find('div', class_='my-library-user-library-account-loans__extend-loan')
                     extend_loan_id = extend_loan_id.select_one('input[type="checkbox"]')['id']
                     if num_id_found == 0:
-                        extend_loan_ids += f"%2C{extend_loan_id}"
-                    else:
                         extend_loan_ids += f"{extend_loan_id}"
+                    else:
+                        extend_loan_ids += f"%2C{extend_loan_id}"
                     num_id_found += 1
                 except (AttributeError, TypeError):
                     extend_loan_id = ""

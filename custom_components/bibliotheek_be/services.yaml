@@ -1,0 +1,32 @@
+# Describes the format for available services for bibliotheek_be
+
+extend_loan:
+  description: >
+    Request an extention of a loan for a specific item 
+  fields:
+    extend_loan_id:
+      description: >
+        The library extention id
+      example: 12345678
+      
+extend_loans_library:
+  description: >
+    Request an extention of a all the loans for a library
+  fields:
+    library_name:
+      description: >
+        The name of the library
+      example: City
+      
+extend_loans_user:
+  description: >
+    Request an extention of a all the loans for a user
+  fields:
+    username:
+      description: >
+        The name of the user
+      example: Firstname Lastname
+      
+extend_all_loans:
+  description: >
+    Request an extention of a all the loans for all users
