@@ -30,9 +30,9 @@ extend_loans_user:
   description: >
     Request an extention of a all the loans for a user
   fields:
-    username:
+    barcode:
       description: >
-        The name of the user
+        The barcode of the user
       example: Firstname Lastname
     max_days_remaining:
       description: >

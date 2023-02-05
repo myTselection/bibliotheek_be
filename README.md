@@ -21,6 +21,22 @@
   - sensor.bibliotheek_be_`<username>`_`<library>` will be created for each user linked to the account
   - sensor.bibliotheek_be_bib_`<library>` will be created for each library
   - sensor.bibliotheek_be_warning will indicate if within how many days some items have to be returned at *any* library (this can be used of conditions, notifications, etc).
+- Following services `bibliotheek_be` will be available:
+	- <details><summary>`bibliotheek_be.extend_loan`</summary>```service: bibliotheek_be.extend_loan
+data:
+  extend_loan_id: 12345678 
+  max_days_remaining: 8```</details>
+	- <details><summary>`bibliotheek_be.extend_loans_library`</summary>```service: bibliotheek_be.extend_loans_library
+data:
+  library_name: 'City' 
+  max_days_remaining: 8```</details>
+	- <details><summary>`bibliotheek_be.extend_loans_user`</summary>```service: bibliotheek_be.extend_loan
+data:
+  barcode: '1234567890123'
+  max_days_remaining: 8```</details>
+	- <details><summary>`bibliotheek_be.extend_all_loans`</summary>```service: bibliotheek_be.extend_loan
+data:
+  max_days_remaining: 8```</details>
 
 ## Status
 Still some optimisations are planned, see [Issues](https://github.com/myTselection/bibliotheek_be/issues) section in GitHub.
