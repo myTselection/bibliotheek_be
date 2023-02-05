@@ -39,6 +39,7 @@ All other files just contain boilerplat code for the integration to work wtihin 
 <p align="center"><img src="https://raw.githubusercontent.com/myTselection/bibliotheek_be/master/Markdown%20Card%20details%20example.png"/></p>
 
 <details><summary>Click to show the Mardown example</summary>
+
 ```
 type: markdown
 content: >-
@@ -93,10 +94,13 @@ content: >-
     {% endfor %}
 title: Bibliotheken
 ```
+
 </details>
+
 ### Markdown Example for details of all users:
 
 <details><summary>Click to show the Mardown example</summary>
+
 ```
 type: markdown
 content: >-
@@ -169,7 +173,8 @@ title: Gebruikers
 Example provided with sensor that will turn on if items have to be returned within 7 days. The alert sensor will be turned on if items have to be returned within 7 days and no extension is possible.
 `configuration.yaml`:
 
-<details><summary>Click to show the Mardown example</summary>
+<details><summary>Click to show the binary sensor configuration example</summary>
+
 ```
 binary_sensor:
   - platform: template
@@ -185,7 +190,10 @@ binary_sensor:
         value_template: >
            {{states('sensor.bibliotheek_be_warning')|int <= 7 and state_attr('sensor.bibliotheek_be_warning','some_not_extendable') == True}}
 ```
+</details>
+
 Base on these sensors, a automation can be build for notifications or below conditional card can be defined:
+<details><summary>Click to show the lovelace card example</summary>
 
 ```
 - type: conditional
@@ -207,4 +215,5 @@ card:
   type: markdown
   content: ⏰Boeken binnen brengen deze week !
 ```
+
 </details>
