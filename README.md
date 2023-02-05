@@ -17,6 +17,8 @@
 - Restart Home Assistant
 - Add 'Bibliotheek.be' integration via HA Settings > 'Devices and Services' > 'Integrations'
 - Provide Bibliotheek.be username and password
+
+## Integration
 - Sensor `Bibliotheek.be` should become available with the number of items lent out.
   - sensor.bibliotheek_be_`<username>`_`<library>` will be created for each user linked to the account
   - sensor.bibliotheek_be_bib_`<library>` will be created for each library
@@ -95,7 +97,7 @@ content: >-
     ## Bib {{state_attr(library,'libraryName') }}:
     {% set all_books = state_attr(library,'loandetails') %}
     {% set urgent_books = all_books | selectattr("days_remaining", "eq",int(state_attr(library,'days_left'))) | list |sort(attribute="extend_loan_id", reverse=False)%}
-    {% set other_books = all_books | rejectattr("days_remaining", "eq",int(state_attr(library,'days_left'))) | list |sort(attribute="days_remaining", reverse=False)|sort(attribute="extend_loan_id", reverse=False)%}
+    {% set other_books = all_books | rejectattr("days_remaining", "eq",int(state_attr(library,'days_left'))) | list |sort(attribute="days_remaining", reverse=False)%}
     {% if urgent_books %}
     - {{state_attr(library,'num_loans') }} stuks in te leveren binnen **{{states(library)}}** dagen: {{state_attr(library,'lowest_till_date') }}
       <details>
@@ -108,6 +110,7 @@ content: >-
           | Binnen: | {{ book.days_remaining }} dagen |
           | Verlenging: | {% if book.extend_loan_id %}verlengbaar{% else %}**Niet verlengbaar**{% endif %} |
           | Bibliotheek: | <a href="{{book.url}}" target="_blank">{{book.library}}</a> |
+          | Gebruiker: | {{book.user}} ({{book.barcode}}) |
           | Type: | {% if book.loan_type == 'Unknown' %}Onbekend{% else %}{{book.loan_type}}{% endif %} |
           | Afbeelding: | <img src="{{ book.image_src }}" height="100"/> |
           </details>
@@ -129,6 +132,7 @@ content: >-
           | :--- | :--- |
           | Verlenging: | {% if book.extend_loan_id %}verlengbaar{% else %}**Niet verlengbaar**{% endif %} |
           | Bibliotheek: | <a href="{{book.url}}" target="_blank">{{book.library}}</a> |
+          | Gebruiker: | {{book.user}} ({{book.barcode}}) |
           | Type: | {% if book.loan_type == 'Unknown' %}Onbekend{% else %}{{book.loan_type}}{% endif %} |
           | Afbeelding: | <img src="{{ book.image_src }}" height="100"/> |
         </details>
@@ -166,7 +170,7 @@ content: >-
 
   - Uitstaande boetes: {{state_attr(user,'open_amounts') }}
     {% if state_attr(user,'num_loans') > 0 %}
-    {% set all_books = state_attr(user,'loandetails').values()  |sort(attribute="days_remaining", reverse=False)|sort(attribute="extend_loan_id", reverse=False)%}
+    {% set all_books = state_attr(user,'loandetails').values()  |sort(attribute="days_remaining", reverse=False)%}
   - In totaal {{state_attr(user,'num_loans') }} uitgeleend{% if all_books %}
       {% for book in all_books %}
       - <details><summary>{% if book.extend_loan_id %}{{ book.loan_till }}{% else %}<b>{{ book.loan_till }}</b>{% endif %}: {{ book.title }} ~ {{ book.author }}</summary> 

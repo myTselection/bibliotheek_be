@@ -132,8 +132,12 @@ class ComponentData:
                     _LOGGER.info(f"calling loan details {userdetail.get('account_details').get('userName')}")
                     loandetails = await self._hass.async_add_executor_job(lambda: self._session.loan_details(url))
                     assert loandetails is not None
-                    # loandetails["user"] = userdetail.get('account_details').get('userName')
-                    _LOGGER.debug(f"loandetails {json.dumps(loandetails,indent=4)}") 
+                    username = userdetail.get('account_details').get('userName')
+                    barcode = userdetail.get('account_details').get('barcode')
+                    for loan_info in loandetails.values():
+                        loan_info["user"] = username
+                        loan_info["barcode"] = barcode
+                    _LOGGER.info(f"loandetails {json.dumps(loandetails,indent=4)}") 
                     # _LOGGER.info(f"calling extend_all")
                     # num_extensions = self.session.extend_all(url, False)
                     # _LOGGER.info(f"num of extensions found: {num_extensions}")
