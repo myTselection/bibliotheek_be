@@ -38,6 +38,7 @@ All other files just contain boilerplat code for the integration to work wtihin 
 <p align="center"><img src="https://raw.githubusercontent.com/myTselection/bibliotheek_be/master/Markdown%20Card%20example.png"/></p>
 <p align="center"><img src="https://raw.githubusercontent.com/myTselection/bibliotheek_be/master/Markdown%20Card%20details%20example.png"/></p>
 
+<details><summary>Click to show the Mardown example</summary>
 ```
 type: markdown
 content: >-
@@ -92,9 +93,10 @@ content: >-
     {% endfor %}
 title: Bibliotheken
 ```
-
+</details>
 ### Markdown Example for details of all users:
 
+<details><summary>Click to show the Mardown example</summary>
 ```
 type: markdown
 content: >-
@@ -159,12 +161,15 @@ content: >-
   {% endfor %}
 title: Gebruikers
 ```
+</details>
 
 ### Example with conditional check for warnings:
 
 #### Extra binary sensor based on personal perference on number of days to limit the warning
 Example provided with sensor that will turn on if items have to be returned within 7 days. The alert sensor will be turned on if items have to be returned within 7 days and no extension is possible.
 `configuration.yaml`:
+
+<details><summary>Click to show the Mardown example</summary>
 ```
 binary_sensor:
   - platform: template
@@ -202,3 +207,4 @@ card:
   type: markdown
   content: ⏰Boeken binnen brengen deze week !
 ```
+</details>

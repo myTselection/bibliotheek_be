@@ -9,7 +9,13 @@ from homeassistant.helpers.aiohttp_client import async_get_clientsession
 
 from . import DOMAIN, NAME
 from .utils import (check_settings)
-
+from homeassistant.const import (
+    CONF_NAME,
+    CONF_PASSWORD,
+    CONF_RESOURCES,
+    CONF_SCAN_INTERVAL,
+    CONF_USERNAME
+)
 _LOGGER = logging.getLogger(__name__)
 
 
@@ -20,18 +26,18 @@ def create_schema(entry, option=False):
 
     if option:
         # We use .get here incase some of the texts gets changed.
-        default_username = entry.data.get("username", "")
-        default_password = entry.data.get("password", "")
+        default_username = entry.data.get(CONF_USERNAME, "")
+        default_password = entry.data.get(CONF_PASSWORD, "")
     else:
         default_username = ""
         default_password = ""
 
     data_schema = OrderedDict()
     data_schema[
-        vol.Optional("username", default=default_username, description="username")
+        vol.Required(CONF_USERNAME, description="username")
     ] = str
     data_schema[
-        vol.Optional("password", default=default_password, description="password")
+        vol.Required(CONF_PASSWORD, description="password")
     ] = str
 
     return data_schema
@@ -50,16 +56,16 @@ class Mixin:
         # This is what we really need.
         username = None
 
-        if user_input.get("username"):
-            username = user_input.get("username")
+        if user_input.get(CONF_USERNAME):
+            username = user_input.get(CONF_USERNAME)
         else:
             self._errors["base"] = "missing username"
             
             
         password = None
 
-        if user_input.get("password"):
-            password = user_input.get("password")
+        if user_input.get(CONF_PASSWORD):
+            password = user_input.get(CONF_PASSWORD)
         else:
             self._errors["base"] = "missing password"
             
@@ -79,8 +85,9 @@ class ComponentFlowHandler(Mixin, config_entries.ConfigFlow, domain=DOMAIN):
         """Handle a flow initialized by the user."""
 
         if user_input is not None:
-            await self.test_setup(user_input)
-            return self.async_create_entry(title=NAME, data=user_input)
+            valid = await self.test_setup(user_input)
+            if valid:
+                return self.async_create_entry(title=NAME, data=user_input)
 
         return await self._show_config_form(user_input)
 

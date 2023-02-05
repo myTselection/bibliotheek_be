@@ -312,7 +312,7 @@ class ComponentSession(object):
         # assert response.status_code == 200
         # soup = BeautifulSoup(response.text, 'html.parser')
         
-        extend_loan_ids = f"{url}/velengen?loan-ids="
+        extend_loan_ids = f"{url}/verlengen?loan-ids="
         num_id_found = 0
         
         #find all libs
@@ -340,11 +340,31 @@ class ComponentSession(object):
         _LOGGER.debug(f"extend_loan_ids: {extend_loan_ids}") 
         
         if execute:
+            _LOGGER.info(f"extend_loan_ids url: {extend_loan_ids}")
             response = self.s.get(f"{extend_loan_ids}",headers=header,timeout=10,allow_redirects=False)
+            _LOGGER.info(f"extend_loan_ids result status code: {response.status_code} response: {response.text}")
             assert response.status_code == 200
+            #retrieve loan extension form token to confirm extension
+            soup = BeautifulSoup(response.text, 'html.parser')
+            div = soup.find('form', class_='my-library-extend-loan-form')
+            _LOGGER.info(f"div my-library-extend-loan-form: {div}")
+            if div:
+                input_fields = soup.find_all('input')
+                data = {input_field.get('name'): input_field.get('value') for input_field in input_fields}
+                header = {"Content-Type": "application/x-www-form-urlencoded"}
+
+                # formbuildid = div.find('input').text
+                # formtoken = div.find('h2').text
+                # formid = div.find('h2').text
+                # data = {"confirm": "1","form-build-id": formbuildid,"form_token":formtoken,"form_id":formid,"op"="Verleng"}
+                _LOGGER.info(f"extend_loan_ids confirm data: {data} url: {extend_loan_ids}")
+                response = self.s.post(f"{extend_loan_ids}",headers=header,data=data,timeout=10)
+                _LOGGER.info(f"extend_loan_ids confirmation result status code: {response.status_code} response: {response.text}")
+                # assert response.status_code == 303
+                
         #example extension
         # https://bibliotheek.be/mijn-bibliotheek/lidmaatschappen/1544061/uitleningen/verlengen?loan-ids=14870745%2C14871363%2C15549439%2C15707198%2C15933330%2C15938501%2C16370683%2C16490618%2C16584912%2C15468349%2C23001576%2C26583345
-        _LOGGER.debug(f"self.loandetails {self.loandetails}") 
+        _LOGGER.info(f"extend_single_item done {num_id_found}") 
         return num_id_found
         
 
@@ -362,7 +382,7 @@ class ComponentSession(object):
         # assert response.status_code == 200
         # soup = BeautifulSoup(response.text, 'html.parser')
         
-        extend_loan_ids = f"{url}/velengen?loan-ids="
+        extend_loan_ids = f"{url}/verlengen?loan-ids="
         num_id_found = 0
         
         #find all libs
@@ -391,10 +411,11 @@ class ComponentSession(object):
         
         if execute:
             response = self.s.get(f"{extend_loan_ids}",headers=header,timeout=10,allow_redirects=False)
+            _LOGGER.info(f"extend_loan_ids result status code: {response.status_code} response: {response.text}")
             assert response.status_code == 200
         #example extension
         # https://bibliotheek.be/mijn-bibliotheek/lidmaatschappen/1544061/uitleningen/verlengen?loan-ids=14870745%2C14871363%2C15549439%2C15707198%2C15933330%2C15938501%2C16370683%2C16490618%2C16584912%2C15468349%2C23001576%2C26583345
-        _LOGGER.debug(f"self.loandetails {self.loandetails}") 
+        _LOGGER.debug(f"extend_single_item done {self.num_id_found}") 
         return num_id_found
 
     def extend_all(self, url, execute):
@@ -410,7 +431,7 @@ class ComponentSession(object):
         assert response.status_code == 200
         soup = BeautifulSoup(response.text, 'html.parser')
         
-        extend_loan_ids = f"{url}/velengen?loan-ids="
+        extend_loan_ids = f"{url}/verlengen?loan-ids="
         num_id_found = 0
         
         #find all libs
@@ -438,8 +459,9 @@ class ComponentSession(object):
         
         if execute & num_id_found > 0:
             response = self.s.get(f"{extend_loan_ids}",headers=header,timeout=10,allow_redirects=False)
+            _LOGGER.info(f"extend_loan_ids result status code: {response.status_code} response: {response.text}")
             assert response.status_code == 200
         #example extension
         # https://bibliotheek.be/mijn-bibliotheek/lidmaatschappen/1544061/uitleningen/verlengen?loan-ids=14870745%2C14871363%2C15549439%2C15707198%2C15933330%2C15938501%2C16370683%2C16490618%2C16584912%2C15468349%2C23001576%2C26583345
-        _LOGGER.debug(f"self.loandetails {self.loandetails}") 
+        _LOGGER.debug(f"extend_single_item done {self.num_id_found}") 
         return num_id_found
