@@ -292,133 +292,79 @@ class ComponentSession(object):
                 except (AttributeError, TypeError):
                     extend_loan_id = ""
                 #example extension
-                # https://bibliotheek.be/mijn-bibliotheek/lidmaatschappen/1544061/uitleningen/verlengen?loan-ids=14870745%2C14871363%2C15549439%2C15707198%2C15933330%2C15938501%2C16370683%2C16490618%2C16584912%2C15468349%2C23001576%2C26583345
+                # https://bibliotheek.be/mijn-bibliotheek/lidmaatschappen/1234567/uitleningen/verlengen?loan-ids=14870745%2C14871363%2C15549439%2C15707198%2C15933330%2C15938501%2C16370683%2C16490618%2C16584912%2C15468349%2C23001576%2C26583345
                 loandetails[f"{title} ~ {author}"] = {'title': title, 'author': author, 'loan_type': loan_type, 'url': url, 'image_src': image_src, 'days_remaining': days_remaining, 'loan_from': loan_from, 'loan_till': loan_till, 'extend_loan_id':extend_loan_id, 'library': libname}
         # _LOGGER.info(f"loandetails {loandetails}") 
         _LOGGER.debug(f"loandetails {json.dumps(loandetails,indent=4)}") 
         return loandetails
         
 
+    #example extension url:
+    # https://bibliotheek.be/mijn-bibliotheek/lidmaatschappen/1234567/uitleningen/verlengen?loan-ids=14870745
+    
     def extend_single_item(self, url, extend_loan_id, execute):
-        loandetails = dict()
         header = {"Content-Type": "application/json"}
 
-        _LOGGER.debug(f"extend_single_item URL {url}")
-        #lidmaatschap based on url in location of response received
-        # response = self.s.get(f"{url}",headers=header,timeout=10,allow_redirects=False)
-        # loan_details_response_header = response.headers
-        # _LOGGER.debug(f"bibliotheek.be lidmaatschap get result status code: {response.status_code} response: {response.text}")
-        # _LOGGER.debug(f"bibliotheek.be lidmaatschap get header: {response.headers}")
-        # assert response.status_code == 200
-        # soup = BeautifulSoup(response.text, 'html.parser')
-        
+        _LOGGER.debug(f"extend_single_item URL {url}")        
         extend_loan_ids = f"{url}/verlengen?loan-ids="
         num_id_found = 0
-        
-        #find all libs
-        # libs = soup.find_all('div', class_='my-library-user-library-account-loans__loan-wrapper')
-        # _LOGGER.debug(f"accounts found: {accounts}")
-
-        #iterate through each account
-        # for div in libs:
-            # libname = div.find('h2').text
-            
-            # books = div.find_all('div', class_='my-library-user-library-account-loans__loan')
-            # for book in books:
-                # try:
-                    # extend_loan_id = book.find('div', class_='my-library-user-library-account-loans__extend-loan')
-                    # extend_loan_id = extend_loan_id.select_one('input[type="checkbox"]')['id']
-                    # if request_extend_id == extend_loan_id:
-                        # if num_id_found == 0:
         extend_loan_ids += f"{extend_loan_id}"
-                        # else:
-                            # extend_loan_ids += f"%2C{extend_loan_id}"
         num_id_found += 1
-                # except (AttributeError, TypeError):
-                    # extend_loan_id = ""
         
         _LOGGER.debug(f"extend_loan_ids: {extend_loan_ids}") 
         
         if execute:
-            _LOGGER.info(f"extend_loan_ids url: {extend_loan_ids}")
-            response = self.s.get(f"{extend_loan_ids}",headers=header,timeout=10,allow_redirects=False)
-            _LOGGER.info(f"extend_loan_ids result status code: {response.status_code} response: {response.text}")
-            assert response.status_code == 200
-            #retrieve loan extension form token to confirm extension
-            soup = BeautifulSoup(response.text, 'html.parser')
-            div = soup.find('form', class_='my-library-extend-loan-form')
-            _LOGGER.info(f"div my-library-extend-loan-form: {div}")
-            if div:
-                input_fields = soup.find_all('input')
-                data = {input_field.get('name'): input_field.get('value') for input_field in input_fields}
-                header = {"Content-Type": "application/x-www-form-urlencoded"}
-
-                # formbuildid = div.find('input').text
-                # formtoken = div.find('h2').text
-                # formid = div.find('h2').text
-                # data = {"confirm": "1","form-build-id": formbuildid,"form_token":formtoken,"form_id":formid,"op"="Verleng"}
-                _LOGGER.info(f"extend_loan_ids confirm data: {data} url: {extend_loan_ids}")
-                response = self.s.post(f"{extend_loan_ids}",headers=header,data=data,timeout=10)
-                _LOGGER.info(f"extend_loan_ids confirmation result status code: {response.status_code} response: {response.text}")
-                # assert response.status_code == 303
+            _LOGGER.debug(f"extend_loan_ids url: {extend_loan_ids}")
+            self._confirm_extension(extend_loan_ids)
                 
-        #example extension
-        # https://bibliotheek.be/mijn-bibliotheek/lidmaatschappen/1544061/uitleningen/verlengen?loan-ids=14870745%2C14871363%2C15549439%2C15707198%2C15933330%2C15938501%2C16370683%2C16490618%2C16584912%2C15468349%2C23001576%2C26583345
-        _LOGGER.info(f"extend_single_item done {num_id_found}") 
+        _LOGGER.debug(f"extend_single_item done {num_id_found}") 
         return num_id_found
         
-
+    def _confirm_extension(self,url):
+        header = {"Content-Type": "application/json"}
+        _LOGGER.debug(f"confirm_extension extend_loan_ids url: {url}")
+        response = self.s.get(f"{url}",headers=header,timeout=10,allow_redirects=False)
+        _LOGGER.debug(f"confirm_extension  result status code: {response.status_code} response: {response.text}")
+        assert response.status_code == 200
+        #retrieve loan extension form token to confirm extension
+        soup = BeautifulSoup(response.text, 'html.parser')
+        div = soup.find('form', class_='my-library-extend-loan-form')
+        _LOGGER.debug(f"div my-library-extend-loan-form: {div}")
+        if div:
+            input_fields = soup.find_all('input')
+            data = {input_field.get('name'): input_field.get('value') for input_field in input_fields}
+            header = {"Content-Type": "application/x-www-form-urlencoded"}
+            _LOGGER.debug(f"confirm_extensionextend_loan_ids confirm data: {data} url: {url}")
+            response = self.s.post(f"{url}",headers=header,data=data,timeout=10)
+            _LOGGER.debug(f"confirm_extension confirmation result status code: {response.status_code} response: {response.text}")
+            # assert response.status_code == 200
+    
 
     def extend_multiple_ids(self, url, extend_loan_ids, execute):
         loandetails = dict()
         header = {"Content-Type": "application/json"}
 
-        _LOGGER.debug(f"extend_single_item URL {url}")
-        #lidmaatschap based on url in location of response received
-        # response = self.s.get(f"{url}",headers=header,timeout=10,allow_redirects=False)
-        # loan_details_response_header = response.headers
-        # _LOGGER.debug(f"bibliotheek.be lidmaatschap get result status code: {response.status_code} response: {response.text}")
-        # _LOGGER.debug(f"bibliotheek.be lidmaatschap get header: {response.headers}")
-        # assert response.status_code == 200
-        # soup = BeautifulSoup(response.text, 'html.parser')
+        _LOGGER.debug(f"extend_multiple_ids URL {url}")
         
-        extend_loan_ids = f"{url}/verlengen?loan-ids="
+        url = f"{url}/verlengen?loan-ids="
         num_id_found = 0
         
-        #find all libs
-        # libs = soup.find_all('div', class_='my-library-user-library-account-loans__loan-wrapper')
-        # _LOGGER.debug(f"accounts found: {accounts}")
-
-        #iterate through each account
-        # for div in libs:
-            # libname = div.find('h2').text
-            
-            # books = div.find_all('div', class_='my-library-user-library-account-loans__loan')
-        for extend_loand_id in extend_loan_ids:
-                # try:
-                    # extend_loan_id = book.find('div', class_='my-library-user-library-account-loans__extend-loan')
-                    # extend_loan_id = extend_loan_id.select_one('input[type="checkbox"]')['id']
-                    # if request_extend_id == extend_loan_id:
+        for extend_loan_id in extend_loan_ids:
             if num_id_found == 0:
-                extend_loan_ids += f"{extend_loan_id}"
+                url += f"{extend_loan_id}"
             else:
-                extend_loan_ids += f"%2C{extend_loan_id}"
+                url += f"%2C{extend_loan_id}"
             num_id_found += 1
-                # except (AttributeError, TypeError):
-                    # extend_loan_id = ""
         
-        _LOGGER.debug(f"extend_loan_ids: {extend_loan_ids}") 
+        _LOGGER.debug(f"extend_multiple_ids extend_loan_ids: {url}") 
         
-        if execute:
-            response = self.s.get(f"{extend_loan_ids}",headers=header,timeout=10,allow_redirects=False)
-            _LOGGER.info(f"extend_loan_ids result status code: {response.status_code} response: {response.text}")
-            assert response.status_code == 200
-        #example extension
-        # https://bibliotheek.be/mijn-bibliotheek/lidmaatschappen/1544061/uitleningen/verlengen?loan-ids=14870745%2C14871363%2C15549439%2C15707198%2C15933330%2C15938501%2C16370683%2C16490618%2C16584912%2C15468349%2C23001576%2C26583345
-        _LOGGER.debug(f"extend_single_item done {self.num_id_found}") 
+        if num_id_found >0 and execute:
+            _LOGGER.debug(f"extend_loan_ids url: {url}")
+            self._confirm_extension(url)
+        _LOGGER.debug(f"extend_multiple_ids done {num_id_found}") 
         return num_id_found
 
-    def extend_all(self, url, execute):
+    def extend_all(self, url, max_days_remaining, execute):
         loandetails = dict()
         header = {"Content-Type": "application/json"}
 
@@ -445,6 +391,13 @@ class ComponentSession(object):
             books = div.find_all('div', class_='my-library-user-library-account-loans__loan')
             for book in books:
                 try:
+                    days_remaining = book.find('div', class_='my-library-user-library-account-loans__loan-days').text.strip()
+                    days_remaining = int(days_remaining.lower().replace('nog ','').replace(' dagen',''))
+                    if days_remaining > max_days_remaining:
+                        continue
+                except AttributeError:
+                    days_remaining = ""
+                try:
                     extend_loan_id = book.find('div', class_='my-library-user-library-account-loans__extend-loan')
                     extend_loan_id = extend_loan_id.select_one('input[type="checkbox"]')['id']
                     if num_id_found == 0:
@@ -455,13 +408,10 @@ class ComponentSession(object):
                 except (AttributeError, TypeError):
                     extend_loan_id = ""
         
-        _LOGGER.debug(f"extend_loan_ids: {extend_loan_ids}") 
+        _LOGGER.debug(f"extend_all extend_loan_ids: {extend_loan_ids}") 
         
         if execute & num_id_found > 0:
-            response = self.s.get(f"{extend_loan_ids}",headers=header,timeout=10,allow_redirects=False)
-            _LOGGER.info(f"extend_loan_ids result status code: {response.status_code} response: {response.text}")
-            assert response.status_code == 200
-        #example extension
-        # https://bibliotheek.be/mijn-bibliotheek/lidmaatschappen/1544061/uitleningen/verlengen?loan-ids=14870745%2C14871363%2C15549439%2C15707198%2C15933330%2C15938501%2C16370683%2C16490618%2C16584912%2C15468349%2C23001576%2C26583345
-        _LOGGER.debug(f"extend_single_item done {self.num_id_found}") 
+            _LOGGER.debug(f"extend_loan_ids url: {extend_loan_ids}")
+            self._confirm_extension(extend_loan_ids)
+        _LOGGER.debug(f"extend_all done {num_id_found}") 
         return num_id_found

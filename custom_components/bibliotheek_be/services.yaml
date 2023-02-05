@@ -8,6 +8,10 @@ extend_loan:
       description: >
         The library extention id
       example: 12345678
+    max_days_remaining:
+      description: >
+        Only extend the loan if the days remaining is below this maximum
+      example: 7
       
 extend_loans_library:
   description: >
@@ -17,6 +21,10 @@ extend_loans_library:
       description: >
         The name of the library
       example: City
+    max_days_remaining:
+      description: >
+        Only extend the loan if the days remaining is below this maximum
+      example: 7
       
 extend_loans_user:
   description: >
@@ -26,7 +34,16 @@ extend_loans_user:
       description: >
         The name of the user
       example: Firstname Lastname
+    max_days_remaining:
+      description: >
+        Only extend the loan if the days remaining is below this maximum
+      example: 7
       
 extend_all_loans:
   description: >
     Request an extention of a all the loans for all users
+  fields:
+    max_days_remaining:
+      description: >
+        Only extend the loan if the days remaining is below this maximum
+      example: 7
