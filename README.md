@@ -72,6 +72,7 @@ Still some optimisations are planned, see [Issues](https://github.com/myTselecti
 The main logic and API connection related code can be found within source code bibliotheek_be/custom_components/bibliotheek_be:
 - [sensor.py](https://github.com/myTselection/bibliotheek_be/blob/master/custom_components/bibliotheek_be/sensor.py)
 - [utils.py](https://github.com/myTselection/bibliotheek_be/blob/master/custom_components/bibliotheek_be/utils.py) -> mainly ComponentSession class
+- [\_init\_.py](https://github.com/myTselection/bibliotheek_be/blob/master/custom_components/bibliotheek_be/_init_.py) -> general setup + services
 
 All other files just contain boilerplat code for the integration to work wtihin HA or to have some constants/strings/translations.
 
