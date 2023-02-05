@@ -218,7 +218,7 @@ title: Gebruikers
 ### Example with conditional check for warnings:
 
 #### Extra binary sensor based on personal perference on number of days to limit the warning
-Example provided with sensor that will turn on if items have to be returned within 7 days. The alert sensor will be turned on if items have to be returned within 7 days and no extension is possible.
+The example below will create a binary sensor that will turn on if items have to be returned within 7 days. The alert sensor will be turned on if items have to be returned within 7 days and no extension is possible for some or all.
 `configuration.yaml`:
 
 <details><summary>Click to show the binary sensor configuration example</summary>
