@@ -109,8 +109,8 @@ All other files just contain boilerplat code for the integration to work wtihin 
 ## Example usage:
 ### Markdown Example for details of all libraries
 
-<p align="center"><img src="https://raw.githubusercontent.com/myTselection/bibliotheek_be/master/Markdown%20Card%20example.png"/></p>
-<p align="center"><img src="https://raw.githubusercontent.com/myTselection/bibliotheek_be/master/Markdown%20Card%20details%20example.png"/></p>
+<p align="center"><img src="https://raw.githubusercontent.com/myTselection/bibliotheek_be/master/Markdown%20Card%20example.png" width="400"/></p>
+<p align="center"><img src="https://raw.githubusercontent.com/myTselection/bibliotheek_be/master/Markdown%20Card%20details%20example.png" width="400"/></p>
 
 <details><summary>Click to show the Mardown example</summary>
 
@@ -293,3 +293,24 @@ card:
 ```
 
 </details>
+
+### Example automation
+Example automation that will automatically extend all items that have 7 or less days left before they need to be returned, whenever the days left is is below 6.
+
+```
+alias: Bibliotheek extend all verlengingen
+description: ""
+trigger:
+  - platform: numeric_state
+    entity_id: sensor.bibliotheek_be_warning
+    below: 6
+condition: []
+action:
+  - service: bibliotheek_be.extend_all_loans
+    data:
+      max_days_remaining: 7
+  - service: notify.notify
+    data:
+      message: Al de boeken die konden verlengd worden, werden verlengd.
+mode: single
+```
