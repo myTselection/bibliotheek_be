@@ -137,10 +137,7 @@ class ComponentData:
                     for loan_info in loandetails.values():
                         loan_info["user"] = username
                         loan_info["barcode"] = barcode
-                    _LOGGER.info(f"loandetails {json.dumps(loandetails,indent=4)}") 
-                    # _LOGGER.info(f"calling extend_all")
-                    # num_extensions = self.session.extend_all(url, False)
-                    # _LOGGER.info(f"num of extensions found: {num_extensions}")
+                    _LOGGER.debug(f"loandetails {json.dumps(loandetails,indent=4)}") 
                     self._loandetails[user_id] = loandetails
             self._lastupdate = datetime.now()
                 
@@ -229,16 +226,6 @@ class ComponentUserSensor(Entity):
             "libraryName": self._libraryName,
             "loandetails": self._loandetails
         }
-        
-        # self._userid = userid
-        # self._barcode = None
-        # self._last_update = None
-        # self._num_loans = None
-        # self._num_reservations = None
-        # self._open_amounts = None
-        # self._username = None
-        # self._libraryName = None
-        # self._loandetails = None
 
     @property
     def device_info(self) -> dict:
