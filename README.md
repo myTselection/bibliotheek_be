@@ -19,9 +19,9 @@
 - Provide Bibliotheek.be username and password
 
 ## Integration
-- Sensor `Bibliotheek.be` should become available with the number of items lent out.
-  - `sensor.bibliotheek_be_<username>_<library>` will be created for each user linked to the account
-  	| Attribute | Description |
+Sensors `Bibliotheek.be` should become available with the number of items lent out.
+- `sensor.bibliotheek_be_<username>_<library>` will be created for each user linked to the account
+	| Attribute | Description |
 	| --------- | ----------- |
 	| State     | Number of loans by this user at this library |
 	| `userid `   | Technical user id assigned by bibliotheek.be |
@@ -32,8 +32,8 @@
 	| `username`  | First and lastname of the user |
 	| `libraryName`  | Name of the library or the group of libraries |
 	| `loandetails`  | Json containing all the loans of this user at this library. The structure of json is:<br/>  `{ 'item name' :` <br/>&nbsp;` { tile: 'title of the item', ` <br/>&nbsp;&nbsp;&nbsp;&nbsp;`author: 'author of the item', ` <br/>&nbsp;&nbsp;&nbsp;&nbsp;`loan_type: 'type of the item (eg book, dvd, ...) , ` <br/>&nbsp;&nbsp;&nbsp;&nbsp;`url: 'url of the specific item', ` <br/>&nbsp;&nbsp;&nbsp;&nbsp;`image_src: 'url to image of the item', ` <br/>&nbsp;&nbsp;&nbsp;&nbsp;`days_remaining: 'number of days by which the item has to be returned or extended', ` <br/>&nbsp;&nbsp;&nbsp;&nbsp;`loan_from: 'Start date of the loan', ` <br/>&nbsp;&nbsp;&nbsp;&nbsp;`loan_till: 'Date by which the item needs to be returned', ` <br/>&nbsp;&nbsp;&nbsp;&nbsp;`extend_loan_id: 'the id used to extend the item, if no id is available, the item can not be extended',` <br/>&nbsp;&nbsp;&nbsp;&nbsp;`library: 'name of the actual library location (city) where the item is belonging too',` <br/>&nbsp;&nbsp;&nbsp;&nbsp;`user: 'the user that lended the item',` <br/>&nbsp;&nbsp;&nbsp;&nbsp;`barcode: 'the barcode of the card that was used to lend the item' }`  |
-  - `sensor.bibliotheek_be_bib_<library>` will be created for each library
-  	| Attribute | Description |
+- `sensor.bibliotheek_be_bib_<library>` will be created for each library
+	| Attribute | Description |
 	| --------- | ----------- |
 	| State     | Min days left by which some items need to be returned |
 	| `some_not_extendable` | True if some of the items that needs to be returned first (see state for nr of days) of this library can not be extended |
@@ -42,8 +42,8 @@
 	| `num_loans_total`  | Total number of loans at this library |
 	| `loandetails`  | Json containing all the loans of this user at this library. The structure of json is:<br/>  `[{ 'item name' :` <br/>&nbsp;` { tile: 'title of the item', ` <br/>&nbsp;&nbsp;&nbsp;&nbsp;`author: 'author of the item', ` <br/>&nbsp;&nbsp;&nbsp;&nbsp;`loan_type: 'type of the item (eg book, dvd, ...) , ` <br/>&nbsp;&nbsp;&nbsp;&nbsp;`url: 'url of the specific item', ` <br/>&nbsp;&nbsp;&nbsp;&nbsp;`image_src: 'url to image of the item', ` <br/>&nbsp;&nbsp;&nbsp;&nbsp;`days_remaining: 'number of days by which the item has to be returned or extended', ` <br/>&nbsp;&nbsp;&nbsp;&nbsp;`loan_from: 'Start date of the loan', ` <br/>&nbsp;&nbsp;&nbsp;&nbsp;`loan_till: 'Date by which the item needs to be returned', ` <br/>&nbsp;&nbsp;&nbsp;&nbsp;`extend_loan_id: 'the id used to extend the item, if no id is available, the item can not be extended',` <br/>&nbsp;&nbsp;&nbsp;&nbsp;`library: 'name of the actual library location (city) where the item is belonging too',` <br/>&nbsp;&nbsp;&nbsp;&nbsp;`user: 'the user that lended the item',` <br/>&nbsp;&nbsp;&nbsp;&nbsp;`barcode: 'the barcode of the card that was used to lend the item' }]`  |
 	| <loan_type> | Number of items of this loan type lended. For each loan type known this attribute will be added |
-  - `sensor.bibliotheek_be_warning` will indicate if within how many days some items have to be returned at *any* library (this can be used of conditions, notifications, etc).
-  	| Attribute | Description |
+- `sensor.bibliotheek_be_warning` will indicate if within how many days some items have to be returned at *any* library (this can be used of conditions, notifications, etc).
+	| Attribute | Description |
 	| --------- | ----------- |
 	| State     | Min days left by which some items need to be returned by any user linked to the account at any library |
 	| `some_not_extendable` | True if some of the items that needs to be returned first (see state for nr of days) of this library can not be extended |
