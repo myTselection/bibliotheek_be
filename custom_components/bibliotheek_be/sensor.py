@@ -279,6 +279,7 @@ class ComponentLibrarySensor(Entity):
         self._num_loans = 0
         self._num_total_loans = 0
         self._some_not_extendable = False
+        self._days_left = None
         
         for user_id, loan_data in self._data._loandetails.items():
             _LOGGER.debug(f"library loop {user_id} {self._libraryName}") 
