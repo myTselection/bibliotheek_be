@@ -273,8 +273,8 @@ class ComponentSession(object):
                     loan_type = "Unknown"
                 try:
                     days_remaining = book.find('div', class_='my-library-user-library-account-loans__loan-days').text.strip()
-                    days_remaining = int(days_remaining.lower().replace('nog ','').replace(' dagen',''))
-                except AttributeError:
+                    days_remaining = int(days_remaining.lower().replace('nog ','').replace(' dagen','').replace(' dag',''))
+                except (AttributeError,ValueError):
                     days_remaining = ""
                 try:
                     loan_from = book.find('div', class_='my-library-user-library-account-loans__loan-from-to')
