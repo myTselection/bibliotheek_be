@@ -297,7 +297,7 @@ class ComponentLibrarySensor(Entity):
                         self._num_loans = 1
                         if loan_item.get('extend_loan_id') == '':
                             self._some_not_extendable = True
-                    if self._days_left == loan_item.get('days_remaining'):
+                    elif self._days_left == loan_item.get('days_remaining'):
                         _LOGGER.debug(f"library_name_loop same days {library_name_loop} {loan_item}")
                         self._num_loans += 1
                         if loan_item.get('extend_loan_id') == '':
@@ -407,7 +407,7 @@ class ComponentLibrariesWarningSensor(Entity):
                     self._library_name = f"{loan_item.get('library')}"
                     if loan_item.get('extend_loan_id') == '':
                         self._some_not_extendable = True
-                if self._days_left == loan_item.get('days_remaining'):
+                elif self._days_left == loan_item.get('days_remaining'):
                     _LOGGER.debug(f"library_name_loop same days {library_name_loop} {loan_item}")
                     self._num_loans += 1
                     if loan_item.get('library') and loan_item.get('library') not in self._library_name:
