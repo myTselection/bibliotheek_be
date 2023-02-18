@@ -19,8 +19,8 @@ _DATETIME_FORMAT = "%Y-%m-%dT%H:%M:%S.0%z"
 
 PLATFORM_SCHEMA = PLATFORM_SCHEMA.extend(
     {
-        vol.Optional("username", default=""): cv.string,
-        vol.Optional("password", default=""): cv.string,
+        vol.Required("username"): cv.string,
+        vol.Required("password"): cv.string,
     }
 )
 
