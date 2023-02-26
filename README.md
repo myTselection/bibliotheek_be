@@ -20,7 +20,8 @@
 
 ## Integration
 Sensors `Bibliotheek.be` should become available with the number of items lent out.
-- `sensor.bibliotheek_be_<username>_<library>` will be created for each user linked to the account
+- <details><summary><code>sensor.bibliotheek_be_[username]_[library]</code> will be created for each user linked to the account</summary>
+
 	| Attribute | Description |
 	| --------- | ----------- |
 	| State     | Number of loans by this user at this library |
@@ -32,7 +33,9 @@ Sensors `Bibliotheek.be` should become available with the number of items lent o
 	| `username`  | First and lastname of the user |
 	| `libraryName`  | Name of the library or the group of libraries |
 	| `loandetails`  | Json containing all the loans of this user at this library. The structure of json is:<br/>  `{ 'item name' :` <br/>&nbsp;` { tile: 'title of the item', ` <br/>&nbsp;&nbsp;&nbsp;&nbsp;`author: 'author of the item', ` <br/>&nbsp;&nbsp;&nbsp;&nbsp;`loan_type: 'type of the item (eg book, dvd, ...) , ` <br/>&nbsp;&nbsp;&nbsp;&nbsp;`url: 'url of the specific item', ` <br/>&nbsp;&nbsp;&nbsp;&nbsp;`image_src: 'url to image of the item', ` <br/>&nbsp;&nbsp;&nbsp;&nbsp;`days_remaining: 'number of days by which the item has to be returned or extended', ` <br/>&nbsp;&nbsp;&nbsp;&nbsp;`loan_from: 'Start date of the loan', ` <br/>&nbsp;&nbsp;&nbsp;&nbsp;`loan_till: 'Date by which the item needs to be returned', ` <br/>&nbsp;&nbsp;&nbsp;&nbsp;`extend_loan_id: 'the id used to extend the item, if no id is available, the item can not be extended',` <br/>&nbsp;&nbsp;&nbsp;&nbsp;`library: 'name of the actual library location (city) where the item is belonging too',` <br/>&nbsp;&nbsp;&nbsp;&nbsp;`user: 'the user that lended the item',` <br/>&nbsp;&nbsp;&nbsp;&nbsp;`barcode: 'the barcode of the card that was used to lend the item' }`  |
-- `sensor.bibliotheek_be_bib_<library>` will be created for each library
+	</details>
+- <details><summary><code>sensor.bibliotheek_be_bib_[library]</code> will be created for each library</summary>
+
 	| Attribute | Description |
 	| --------- | ----------- |
 	| State     | Min days left by which some items need to be returned |
@@ -42,7 +45,10 @@ Sensors `Bibliotheek.be` should become available with the number of items lent o
 	| `num_loans_total`  | Total number of loans at this library |
 	| `loandetails`  | Json containing all the loans of this user at this library. The structure of json is:<br/>  `[{ 'item name' :` <br/>&nbsp;` { tile: 'title of the item', ` <br/>&nbsp;&nbsp;&nbsp;&nbsp;`author: 'author of the item', ` <br/>&nbsp;&nbsp;&nbsp;&nbsp;`loan_type: 'type of the item (eg book, dvd, ...) , ` <br/>&nbsp;&nbsp;&nbsp;&nbsp;`url: 'url of the specific item', ` <br/>&nbsp;&nbsp;&nbsp;&nbsp;`image_src: 'url to image of the item', ` <br/>&nbsp;&nbsp;&nbsp;&nbsp;`days_remaining: 'number of days by which the item has to be returned or extended', ` <br/>&nbsp;&nbsp;&nbsp;&nbsp;`loan_from: 'Start date of the loan', ` <br/>&nbsp;&nbsp;&nbsp;&nbsp;`loan_till: 'Date by which the item needs to be returned', ` <br/>&nbsp;&nbsp;&nbsp;&nbsp;`extend_loan_id: 'the id used to extend the item, if no id is available, the item can not be extended',` <br/>&nbsp;&nbsp;&nbsp;&nbsp;`library: 'name of the actual library location (city) where the item is belonging too',` <br/>&nbsp;&nbsp;&nbsp;&nbsp;`user: 'the user that lended the item',` <br/>&nbsp;&nbsp;&nbsp;&nbsp;`barcode: 'the barcode of the card that was used to lend the item' }]`  |
 	| <loan_type> | Number of items of this loan type lended. For each loan type known this attribute will be added |
-- `sensor.bibliotheek_be_warning` will indicate if within how many days some items have to be returned at *any* library (this can be used of conditions, notifications, etc).
+	
+	</details>
+- <details><summary><code>sensor.bibliotheek_be_warning</code> will indicate within how many days some items have to be returned at *any* library (this can be used of conditions, notifications, etc).</summary>
+
 	| Attribute | Description |
 	| --------- | ----------- |
 	| State     | Min days left by which some items need to be returned by any user linked to the account at any library |
@@ -51,8 +57,10 @@ Sensors `Bibliotheek.be` should become available with the number of items lent o
 	| `num_loans`  | Number of loans that need to be returned first (see state for nr of days)  |
 	| `num_loans_total`  | Total number of loans by any user at any library |
 	| `library_name`  | Name(s) of the library at which some items need to be returned first (or comma spearated list of names) |
+	
+	</details>
 - Following services `bibliotheek_be` will be available:
-	- <details><summary>bibliotheek_be.extend_loan: extend a single item, based on extend_loan_id, if the days_remaining is less than or equal the max set</summary> 
+	- <details><summary><code>bibliotheek_be.extend_loan</code>: extend a single item, based on extend_loan_id, if the days_remaining is less than or equal the max set</summary> 
 	
 		```
 		service: bibliotheek_be.extend_loan
@@ -63,7 +71,7 @@ Sensors `Bibliotheek.be` should become available with the number of items lent o
 		
 	  </details>
 	
-	- <details><summary>bibliotheek_be.extend_loans_library: extend all loans of a library that have days_remaining less than or equal the max set</summary>
+	- <details><summary><code>bibliotheek_be.extend_loans_library</code>: extend all loans of a library that have days_remaining less than or equal the max set</summary>
 	
 		```
 		service: bibliotheek_be.extend_loans_library
@@ -74,7 +82,7 @@ Sensors `Bibliotheek.be` should become available with the number of items lent o
 		  
 	  </details>
 	  
-	- <details><summary>bibliotheek_be.extend_loans_user: extend all loans of a user that have days_remaining less than or equal the max set</summary>
+	- <details><summary><code>bibliotheek_be.extend_loans_user</code>: extend all loans of a user that have days_remaining less than or equal the max set</summary>
 	
 		```
 		service: bibliotheek_be.extend_loan
@@ -85,7 +93,7 @@ Sensors `Bibliotheek.be` should become available with the number of items lent o
 		  
           </details>
 	  
-	- <details><summary>bibliotheek_be.extend_all_loans: extend all loans that have days_remaining less than or equal the max set</summary>
+	- <details><summary><code>bibliotheek_be.extend_all_loans</code>: extend all loans that have days_remaining less than or equal the max set</summary>
 	
 		```
 		service: bibliotheek_be.extend_loan
