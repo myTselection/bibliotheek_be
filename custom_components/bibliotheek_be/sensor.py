@@ -4,7 +4,7 @@ from datetime import date, datetime, timedelta
 
 import homeassistant.helpers.config_validation as cv
 import voluptuous as vol
-from homeassistant.components.sensor import PLATFORM_SCHEMA
+from homeassistant.components.sensor import PLATFORM_SCHEMA, SensorEntity, SensorDeviceClass
 from homeassistant.const import ATTR_ATTRIBUTION
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 from homeassistant.helpers.entity import Entity
@@ -359,9 +359,13 @@ class ComponentLibrarySensor(Entity):
         return int
 
     @property
+    def device_class(self):
+        return SensorDeviceClass.DURATION
+        
+    @property
     def unit_of_measurement(self) -> str:
         """Return the unit of measurement this sensor expresses itself in."""
-        return "days"
+        return "d"
 
     @property
     def friendly_name(self) -> str:
@@ -468,9 +472,13 @@ class ComponentLibrariesWarningSensor(Entity):
         return int
 
     @property
+    def device_class(self):
+        return SensorDeviceClass.DURATION
+        
+    @property
     def unit_of_measurement(self) -> str:
         """Return the unit of measurement this sensor expresses itself in."""
-        return "days"
+        return "d"
 
     @property
     def friendly_name(self) -> str:
