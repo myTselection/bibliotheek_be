@@ -392,7 +392,7 @@ class ComponentSession(object):
             for book in books:
                 try:
                     days_remaining = book.find('div', class_='my-library-user-library-account-loans__loan-days').text.strip()
-                    days_remaining = int(days_remaining.lower().replace('nog ','').replace(' dagen',''))
+                    days_remaining = int(days_remaining.lower().replace('nog ','').replace(' dagen','').replace(' dag',''))
                     if days_remaining > max_days_remaining:
                         continue
                 except AttributeError:
