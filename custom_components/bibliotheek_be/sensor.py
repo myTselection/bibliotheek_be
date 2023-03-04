@@ -148,7 +148,7 @@ class ComponentData:
     async def update(self):
         await self._update()
     
-    def clear_session():
+    def clear_session(self):
         self._session : None
 
 

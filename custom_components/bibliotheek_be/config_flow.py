@@ -34,10 +34,10 @@ def create_schema(entry, option=False):
 
     data_schema = OrderedDict()
     data_schema[
-        vol.Required(CONF_USERNAME, description="username")
+        vol.Required(CONF_USERNAME, default=default_username, description="username")
     ] = str
     data_schema[
-        vol.Required(CONF_PASSWORD, description="password")
+        vol.Required(CONF_PASSWORD, default=default_password, description="password")
     ] = str
 
     return data_schema
