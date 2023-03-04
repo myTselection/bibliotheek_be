@@ -86,8 +86,7 @@ class ComponentFlowHandler(Mixin, config_entries.ConfigFlow, domain=DOMAIN):
 
         if user_input is not None:
             valid = await self.test_setup(user_input)
-            if valid:
-                return self.async_create_entry(title=NAME, data=user_input)
+            return self.async_create_entry(title=NAME, data=user_input)
 
         return await self._show_config_form(user_input)
 
