@@ -12,7 +12,7 @@ _LOGGER = logging.getLogger(__name__)
 
 #run this test on command line with: python -m unittest test_component_session
 
-logging.basicConfig(level=logging.INFO)
+logging.basicConfig(level=logging.DEBUG)
 class TestComponentSession(unittest.TestCase):
     def setUp(self):
         self.session = ComponentSession()
