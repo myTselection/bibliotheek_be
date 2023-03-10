@@ -83,16 +83,18 @@ class ComponentSession(object):
         #login callback based on url in location of response received
         response = self.s.get(login_location,headers=header,timeout=10,allow_redirects=False)
         login_callback_location = response.headers.get('location')
-        _LOGGER.debug(f"bibliotheek.be login callback get result status code: {response.status_code}")
+        _LOGGER.info(f"bibliotheek.be login callback get result status code: {response.status_code}")
         _LOGGER.debug(f"bibliotheek.be login callback get header: {response.headers} text {response.text}")
-        if response.status_code == 302:        
-            # request access code, https://mijn.bibliotheek.be/openbibid-api.html#_authenticatie
-            data = {"hint": hint, "token": oauth_token, "callback":"https://bibliotheek.be/my-library/login/callback", "email": username, "password": password}
-            response = self.s.post('https://mijn.bibliotheek.be/openbibid/rest/accessToken',headers=header,data=data,timeout=10,allow_redirects=False)
-            _LOGGER.debug(f"bibliotheek.be login get result status code: {response.status_code}")
-        else:
-            #login session was already available
-            login_callback_location = "https://bibliotheek.be/mijn-bibliotheek/lidmaatschappen"
+        # assert response.status_code == 302
+        # if response.status_code == 302:        
+        #     # request access code, https://mijn.bibliotheek.be/openbibid-api.html#_authenticatie
+        #     data = {"hint": hint, "token": oauth_token, "callback":"https://bibliotheek.be/my-library/login/callback", "email": username, "password": password}
+        #     response = self.s.post('https://mijn.bibliotheek.be/openbibid/rest/accessToken',headers=header,data=data,timeout=10,allow_redirects=False)
+        #     _LOGGER.debug(f"bibliotheek.be login get result status code: {response.status_code}")
+        # else:
+        #     #login session was already available
+        #     login_callback_location = "https://bibliotheek.be/mijn-bibliotheek/lidmaatschappen"
+        login_callback_location = "https://bibliotheek.be/mijn-bibliotheek/lidmaatschappen"
         #lidmaatschap based on url in location of response received
         response = self.s.get(f"{login_callback_location}",headers=header,timeout=10,allow_redirects=False)
         lidmaatschap_response_header = response.headers
@@ -317,7 +319,7 @@ class ComponentSession(object):
             _LOGGER.debug(f"extend_loan_ids url: {extend_loan_ids}")
             self._confirm_extension(extend_loan_ids)
                 
-        _LOGGER.debug(f"extend_single_item done {num_id_found}") 
+        _LOGGER.info(f"extend_single_item done for {num_id_found} items") 
         return num_id_found
         
     def _confirm_extension(self,url):
@@ -361,7 +363,7 @@ class ComponentSession(object):
         if num_id_found >0 and execute:
             _LOGGER.debug(f"extend_loan_ids url: {url}")
             self._confirm_extension(url)
-        _LOGGER.debug(f"extend_multiple_ids done {num_id_found}") 
+        _LOGGER.info(f"extend_multiple_ids done for {num_id_found} items") 
         return num_id_found
 
     def extend_all(self, url, max_days_remaining, execute):
@@ -410,8 +412,8 @@ class ComponentSession(object):
         
         _LOGGER.debug(f"extend_all extend_loan_ids: {extend_loan_ids}") 
         
-        if execute & num_id_found > 0:
+        if execute and num_id_found > 0:
             _LOGGER.debug(f"extend_loan_ids url: {extend_loan_ids}")
             self._confirm_extension(extend_loan_ids)
-        _LOGGER.debug(f"extend_all done {num_id_found}") 
+        _LOGGER.info(f"extend_all done for {num_id_found} items") 
         return num_id_found
