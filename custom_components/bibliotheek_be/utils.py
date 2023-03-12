@@ -54,7 +54,9 @@ class ComponentSession(object):
         oauth_token = query_params.get('oauth_token')
         hint = query_params.get('hint')
         _LOGGER.debug(f"bibliotheek.be url params parsed: oauth_callback_url: {oauth_callback_url}, oauth_token: {oauth_token}, hint: {hint}")
-        assert response.status_code == 302
+        if (response.status_code != 302):
+            # Return if already authenticated
+            return
         
         
         #authorize based on url in location of response received
