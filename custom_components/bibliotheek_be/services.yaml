@@ -47,3 +47,7 @@ extend_all_loans:
       description: >
         Only extend the loan if the days remaining is below this maximum
       example: 7
+      
+update:
+  description: >
+    Force an update of the sensor data (standard updates are throttled per hour).

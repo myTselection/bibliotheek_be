@@ -225,9 +225,18 @@ def register_services(hass, config_entry):
                 state_warning_sensor_attributes["refresh_required"] = (extension_confirmation > 0)
                 await hass.async_add_executor_job(lambda: hass.states.set(f"sensor.{DOMAIN}_warning",state_warning_sensor.state,state_warning_sensor_attributes))
 
+    async def handle_update(call):
+        """Handle the service call."""
+        state_warning_sensor = hass.states.get(f"sensor.{DOMAIN}_warning")
+        _LOGGER.debug(f"state_warning_sensor sensor.{DOMAIN}_warning {state_warning_sensor}")
+        state_warning_sensor_attributes = dict(state_warning_sensor.attributes)
+        state_warning_sensor_attributes["refresh_required"] = True
+        await hass.async_add_executor_job(lambda: hass.states.set(f"sensor.{DOMAIN}_warning",state_warning_sensor.state,state_warning_sensor_attributes))
+
 
     hass.services.async_register(DOMAIN, 'extend_loan', handle_extend_loan)
     hass.services.async_register(DOMAIN, 'extend_loans_library', handle_extend_loans_library)
     hass.services.async_register(DOMAIN, 'extend_loans_user', handle_extend_loans_user)
     hass.services.async_register(DOMAIN, 'extend_all_loans', handle_extend_all_loans)
+    hass.services.async_register(DOMAIN, 'update', handle_update)
     _LOGGER.info(f"async_register done")
