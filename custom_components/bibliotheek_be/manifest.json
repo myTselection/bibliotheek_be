@@ -1,13 +1,13 @@
 {
-  "domain": "bibliotheek_be",
-  "name": "Bibliotheek.be",
-  "codeowners": ["@myTselection"],
-  "config_flow": true,
-  "dependencies": [],
-  "documentation": "https://github.com/myTselection/bibliotheek_be",
-  "integration_type": "hub",
-  "iot_class": "cloud_polling",
-  "issue_tracker": "https://github.com/myTselection/bibliotheek_be/issues",
-  "requirements": ["bs4", "html5lib"],
-  "version": "1.1.10"
+    "domain": "bibliotheek_be",
+    "name": "Bibliotheek.be",
+    "codeowners": ["@myTselection"],
+    "config_flow": true,
+    "dependencies": [],
+    "documentation": "https://github.com/myTselection/bibliotheek_be",
+    "integration_type": "hub",
+    "iot_class": "cloud_polling",
+    "issue_tracker": "https://github.com/myTselection/bibliotheek_be/issues",
+    "requirements": ["bs4", "html5lib"],
+    "version": "1.2.0"
 }

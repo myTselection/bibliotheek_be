@@ -123,9 +123,15 @@ def register_services(hass, config_entry):
                     if str(curr_extend_loan_id) == str(extend_loan_id):
                         extend_loan_id_found = True
                         _LOGGER.debug(f"handle_extend_loan curr_extend_loan_id {curr_extend_loan_id} library_name_loop {library_name_loop}")
-                        _LOGGER.debug(f"handle_extend_loan calling extend_single_item {userdetail.get('account_details').get('userName')} , extend id: {extend_loan_id}")
+                        _LOGGER.info(f"handle_extend_loan calling extend_single_item {userdetail.get('account_details').get('userName')} , extend id: {extend_loan_id}")
                         if int(curr_days_remaining) <= int(max_days_remaining):
                             extension_confirmation = await hass.async_add_executor_job(lambda: session.extend_single_item(url, extend_loan_id, True))
+                            state_warning_sensor = hass.states.get(f"sensor.{DOMAIN}_warning")
+                            _LOGGER.debug(f"state_warning_sensor sensor.{DOMAIN}_warning {state_warning_sensor}")
+                            state_warning_sensor_attributes = dict(state_warning_sensor.attributes)
+                            state_warning_sensor_attributes["refresh_required"] = (extension_confirmation > 0)
+                            _LOGGER.debug(f"state_warning_sensor attributes sensor.{DOMAIN}_warning: {state_warning_sensor_attributes}")
+                            await hass.async_add_executor_job(lambda: hass.states.set(f"sensor.{DOMAIN}_warning",state_warning_sensor.state,state_warning_sensor_attributes))
                         else:
                             _LOGGER.debug(f"skipped extension since {curr_days_remaining} below max {max_days_remaining}")
                         break
@@ -159,12 +165,16 @@ def register_services(hass, config_entry):
                     curr_days_remaining = loan_item.get('days_remaining')
                     _LOGGER.debug(f"handle_extend_loans_library curr_extend_loan_id {curr_extend_loan_id} library_name_loop {library_name_loop} curr_days_remaining {curr_days_remaining}")
                     if curr_extend_loan_id and library_name_loop.lower() == library_name.lower():
-                        _LOGGER.debug(f"handle_extend_loan curr_extend_loan_id {curr_extend_loan_id} library_name_loop {library_name_loop}")
+                        _LOGGER.info(f"handle_extend_loan curr_extend_loan_id {curr_extend_loan_id} library_name_loop {library_name_loop}")
                         if int(curr_days_remaining) <= int(max_days_remaining):
                             extend_load_ids.append(curr_extend_loan_id)
                         else:
                             _LOGGER.debug(f"skipped extension since {curr_days_remaining} below max {max_days_remaining}")
                 extension_confirmation = await hass.async_add_executor_job(lambda: session.extend_multiple_ids(url, extend_load_ids, True))
+                state_warning_sensor = hass.states.get(f"sensor.{DOMAIN}_warning")
+                state_warning_sensor_attributes = dict(state_warning_sensor.attributes)
+                state_warning_sensor_attributes["refresh_required"] = (extension_confirmation > 0)
+                await hass.async_add_executor_job(lambda: hass.states.set(f"sensor.{DOMAIN}_warning",state_warning_sensor.state,state_warning_sensor_attributes))
 
     async def handle_extend_loans_user(call):
         """Handle the service call."""
@@ -184,8 +194,12 @@ def register_services(hass, config_entry):
             if curr_barcode == barcode:
                 url = userdetail.get('loans').get('url')
                 if url:
-                    _LOGGER.debug(f"handle_extend_loan calling loan details {userdetail.get('account_details').get('userName')}")
+                    _LOGGER.info(f"handle_extend_loan calling loan details {userdetail.get('account_details').get('userName')}")
                     extension_confirmation = await hass.async_add_executor_job(lambda: session.extend_all(url, int(max_days_remaining), True))
+                    state_warning_sensor = hass.states.get(f"sensor.{DOMAIN}_warning")
+                    state_warning_sensor_attributes = dict(state_warning_sensor.attributes)
+                    state_warning_sensor_attributes["refresh_required"] = (extension_confirmation > 0)
+                    await hass.async_add_executor_job(lambda: hass.states.set(f"sensor.{DOMAIN}_warning",state_warning_sensor.state,state_warning_sensor_attributes))
                 break
 
     async def handle_extend_all_loans(call):
@@ -203,8 +217,13 @@ def register_services(hass, config_entry):
         for user_id, userdetail in userdetails.items():
             url = userdetail.get('loans').get('url')
             if url:
-                _LOGGER.debug(f"handle_extend_loan calling loan details {userdetail.get('account_details').get('userName')}")
+                _LOGGER.info(f"handle_extend_loan calling loan details {userdetail.get('account_details').get('userName')}")
                 extension_confirmation = await hass.async_add_executor_job(lambda: session.extend_all(url, int(max_days_remaining), True))
+                state_warning_sensor = hass.states.get(f"sensor.{DOMAIN}_warning")
+                _LOGGER.debug(f"state_warning_sensor sensor.{DOMAIN}_warning {state_warning_sensor}")
+                state_warning_sensor_attributes = dict(state_warning_sensor.attributes)
+                state_warning_sensor_attributes["refresh_required"] = (extension_confirmation > 0)
+                await hass.async_add_executor_job(lambda: hass.states.set(f"sensor.{DOMAIN}_warning",state_warning_sensor.state,state_warning_sensor_attributes))
 
 
     hass.services.async_register(DOMAIN, 'extend_loan', handle_extend_loan)

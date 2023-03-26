@@ -125,7 +125,7 @@ class ComponentData:
         if self._session:
             self._userdetails = await self._hass.async_add_executor_job(lambda: self._session.login(self._username, self._password))
             assert self._userdetails is not None
-            _LOGGER.info(f"{NAME} update login completed")
+            _LOGGER.debug(f"{NAME} update login completed")
             for user_id, userdetail in self._userdetails.items():
                 url = userdetail.get('loans').get('url')
                 if url:
@@ -136,6 +136,7 @@ class ComponentData:
                     barcode = userdetail.get('account_details').get('barcode')
                     for loan_info in loandetails.values():
                         loan_info["user"] = username
+                        loan_info["userid"] = user_id
                         loan_info["barcode"] = barcode
                     _LOGGER.debug(f"loandetails {json.dumps(loandetails,indent=4)}") 
                     self._loandetails[user_id] = loandetails
@@ -145,8 +146,13 @@ class ComponentData:
     async def _update(self):
         await self._force_update()
 
-    async def update(self):
-        await self._update()
+    async def update(self):        
+        state_warning_sensor = self._hass.states.get(f"sensor.{DOMAIN}_warning")
+        state_warning_sensor_attributes = dict(state_warning_sensor.attributes)
+        if state_warning_sensor_attributes["refresh_required"]:
+            await self._force_update()
+        else:
+            await self._update()
     
     def clear_session(self):
         self._session : None
@@ -415,7 +421,7 @@ class ComponentLibrariesWarningSensor(Entity):
                     _LOGGER.debug(f"library_name_loop same days {library_name_loop} {loan_item}")
                     self._num_loans += 1
                     if loan_item.get('library') and loan_item.get('library') not in self._library_name:
-                        self._library_name += f", {loan_item.get('library')}"
+                        self._library_name += f"{loan_item.get('library')} "
                     if loan_item.get('extend_loan_id') == '':
                         self._some_not_extendable = True
         
@@ -453,7 +459,8 @@ class ComponentLibrariesWarningSensor(Entity):
             "lowest_till_date": self._lowest_till_date,
             "num_loans": self._num_loans,
             "num_total_loans": self._num_total_loans,
-            "library_name":  self._library_name
+            "library_name":  self._library_name,
+            "refresh_required": False
         }
         return attributes
 
