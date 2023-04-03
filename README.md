@@ -185,7 +185,7 @@ content: >-
         - Email: {{state_attr(library,'email')}}
         - Openingsuren: 
            {% for key,value in state_attr(library,'opening_hours').items() %}
-           - {{key}}: {{value | join(', ')}}{% if not value %}Gelosten{% endif %}
+           - {{key}}: {{value | join(', ')}}{% if not value %}Gesloten{% endif %}
            {% endfor %}
         - Sluitingsdagen: 
            {% for closed in state_attr(library,'closed_dates') %}
