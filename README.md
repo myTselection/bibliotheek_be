@@ -125,58 +125,68 @@ All other files just contain boilerplat code for the integration to work wtihin 
 ```
 type: markdown
 content: >-
+  <img
+  src="https://raw.githubusercontent.com/myTselection/bibliotheek_be/master/icon.png"
+  height="100"/>
+
   {% set libraries = states | selectattr("entity_id",
-  "match","^sensor.bibliotheek_be_bib*") | list %}
+  "match","^sensor.bibliotheek_be_bib*") | rejectattr("state",
+  "match","unavailable") | list %}
 
   {% for library_device in libraries %}
     {% set library = library_device.entity_id %}
     ## Bib {{state_attr(library,'libraryName') }}:
-    {% set all_books = state_attr(library,'loandetails') %}
+    {% set all_books = state_attr(library,'loandetails')| list |sort(attribute="days_remaining", reverse=False) %}
     {% set urgent_books = all_books | selectattr("days_remaining", "eq",int(state_attr(library,'days_left'))) | list |sort(attribute="extend_loan_id", reverse=False)%}
     {% set other_books = all_books | rejectattr("days_remaining", "eq",int(state_attr(library,'days_left'))) | list |sort(attribute="days_remaining", reverse=False)%}
-    {% if urgent_books %}
-    - {{state_attr(library,'num_loans') }} stuks in te leveren binnen **{{states(library)}}** dagen: {{strptime(state_attr(library,'lowest_till_date'), "%d/%m/%Y").strftime("%a %d/%m/%Y") }}
-      <details>
-        <summary>Toon dringende ({{urgent_books|length}}):</summary>
-        {% for book in urgent_books  %}
-        - <details><summary>{% if book.extend_loan_id %}{{ strptime(book.loan_till, "%d/%m/%Y").strftime("%a %d/%m/%Y") }}{% else %}<b>{{ strptime(book.loan_till, "%d/%m/%Y").strftime("%a %d/%m/%Y") }}</b>{% endif %}: {{ book.title }} ~ {{ book.author }}</summary> 
-    
-          |  |  |
-          | :--- | :--- |
-          | Binnen: | {{ book.days_remaining }} dagen |
-          | Verlenging: | {% if book.extend_loan_id %}verlengbaar{% else %}**Niet verlengbaar**{% endif %} |
-          | Bibliotheek: | <a href="{{book.url}}" target="_blank">{{book.library}}</a> |
-          | Gebruiker: | {{book.user}} ({{book.barcode}}) |
-          | Type: | {% if book.loan_type == 'Unknown' %}Onbekend{% else %}{{book.loan_type}}{% endif %} |
-          | Afbeelding: | <img src="{{ book.image_src }}" height="100"/> |
-          </details>
+    {% if all_books %}
+    - {{state_attr(library,'num_loans') }} stuk{% if state_attr(library,'num_loans')|int > 1 %}s{% endif %} in te leveren binnen **{{states(library)}}** dag{% if states(library)|int > 1 %}en{% endif %}: {{strptime(state_attr(library,'lowest_till_date'), "%d/%m/%Y").strftime("%a %d/%m/%Y") }}
+
+  <details>
+      <summary>Toon details:</summary>
+        {% for book in all_books  %}
+  <details>
+      <summary>{% if book.extend_loan_id %}{{ strptime(book.loan_till, "%d/%m/%Y").strftime("%a %d/%m/%Y") }}{% else %}<b>{{ strptime(book.loan_till, "%d/%m/%Y").strftime("%a %d/%m/%Y") }}</b>{% endif %}: {{ book.title }} ~ {{ book.author }}</summary> 
+
+    |  |  |
+    | :--- | :--- |
+    | Binnen: | {{ book.days_remaining }} dagen |
+    | Verlenging: | {% if book.extend_loan_id %}<a href="https://{{state_attr(library,'libraryName') }}.bibliotheek.be/mijn-bibliotheek/lidmaatschappen/{{book.userid}}/uitleningen/verlengen?loan-ids={{book.extend_loan_id}}" target="_blank">verlengbaar</a>{% else %}**Niet verlengbaar**{% endif %} |
+    | Bibliotheek: | <a href="{{book.url}}" target="_blank">{{book.library}}</a> |
+    | Gebruiker: | {{book.user}} ({{book.barcode}}) |
+    | Type: | {% if book.loan_type == 'Unknown' %}Onbekend{% else %}{{book.loan_type}}{% endif %} |
+    | Afbeelding: | <img src="{{ book.image_src }}" height="100"/> |
+
+    </details>
         {% endfor %}
-      </details>
+  </details>
     {% endif %}
-    - In totaal {{state_attr(library,'num_total_loans') }} uitgeleend:
+    - <details><summary>In totaal {{state_attr(library,'num_total_loans') }} uitgeleend:</summary>
+    
       - Boeken: {{state_attr(library,'Boek') }}
       - Onbekend: {{state_attr(library,'Unknown') }}
       - DVDs: {{state_attr(library,'Dvd') }}
       - Strips: {{state_attr(library,'Strip') }}
-      {% if other_books %}
-      <details>
-        <summary>Toon overige ({{other_books|length}}):</summary>
-      {% for book in other_books  %}
-      - <details><summary>{% if book.extend_loan_id %}{{ book.loan_till }}{% else %}<b>{{ book.loan_till }}</b>{% endif %}: {{ book.title }} ~ {{ book.author }}</summary> 
+      
+    </details>
+    
+    - <details><summary>Info Bib {{state_attr(library,'libraryName') }}</summary>
 
-          |  |  |
-          | :--- | :--- |
-          | Verlenging: | {% if book.extend_loan_id %}verlengbaar{% else %}**Niet verlengbaar**{% endif %} |
-          | Bibliotheek: | <a href="{{book.url}}" target="_blank">{{book.library}}</a> |
-          | Gebruiker: | {{book.user}} ({{book.barcode}}) |
-          | Type: | {% if book.loan_type == 'Unknown' %}Onbekend{% else %}{{book.loan_type}}{% endif %} |
-          | Afbeelding: | <img src="{{ book.image_src }}" height="100"/> |
-        </details>
-      {% endfor %}
-      </details>
-      {% endif %}
+
+        - Adres: {{state_attr(library,'address')}}
+        - GPS: [{{state_attr(library,'GPS')}}](http://maps.google.com/maps?daddr={{state_attr(library,'GPS').split('NB')[0]}},{{state_attr(library,'GPS').split(' ')[1] | replace('OL','')}}&ll=)
+        - Tel: {{state_attr(library,'phone')}}
+        - Email: {{state_attr(library,'email')}}
+        - Openingsuren: 
+           {% for key,value in state_attr(library,'opening_hours').items() %}
+           - {{key}}: {{value | join(', ')}}{% if not value %}Gelosten{% endif %}
+           {% endfor %}
+        - Sluitingsdagen: 
+           {% for closed in state_attr(library,'closed_dates') %}
+           -  {{closed.date}}: {{closed.reason}} 
+           {% endfor %}
     {% endfor %}
-title: Bibliotheken
+
 ```
 
 </details>
