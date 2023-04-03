@@ -86,7 +86,7 @@ class ComponentSession(object):
         response = self.s.get(login_location,headers=header,timeout=15,allow_redirects=False)
         login_callback_location = response.headers.get('location')
         _LOGGER.debug(f"bibliotheek.be login callback get result status code: {response.status_code}")
-        _LOGGER.debug(f"bibliotheek.be login callback get header: {response.headers} text {response.text}")
+        _LOGGER.debug(f"bibliotheek.be login callback get header: {response.headers} ") #text {response.text}")
         # assert response.status_code == 302
         # if response.status_code == 302:        
         #     # request access code, https://mijn.bibliotheek.be/openbibid-api.html#_authenticatie
@@ -197,7 +197,50 @@ class ComponentSession(object):
         _LOGGER.debug(f"self.userdetails {json.dumps(self.userdetails,indent=4)}")
         return self.userdetails
         
+    def library_details(self, url):
+        header = {"Content-Type": "application/json"}
 
+        _LOGGER.debug(f"library details URL {url}")
+
+        #lidmaatschap based on url in location of response received
+        response = self.s.get(f"{url}",headers=header,timeout=15,allow_redirects=False)
+        library_details_response_header = response.headers
+        _LOGGER.debug(f"bibliotheek.be library get result status code: {response.status_code}") #response: {response.text}")
+        _LOGGER.debug(f"bibliotheek.be library get header: {response.headers}")
+        assert response.status_code == 200
+        soup = BeautifulSoup(response.text, 'html.parser')
+        libraryArticle = soup.find('article',class_='library library--page-item')
+        library_info = {}
+        # library_info['name'] = libraryArticle.find('a', class_='.library--page-item').text.strip()
+
+        hours = {}
+        for dl in libraryArticle.find_all('dl',class_='library__date-open'):
+            day = dl.dt.text.strip()
+            times = []
+            for span in dl.select('.timespan time'):
+                times.append(span.text.strip())
+            hours[day] = times
+        library_info['hours'] = hours
+
+        address = {}
+        address['address'] = libraryArticle.find('div',class_='library__pane--address--address').text.replace('\n', ' ').replace('Adres','').replace('Toon op kaart','').strip().replace('         ',',')
+        address['gps'] = libraryArticle.find('div',class_='library__pane--address-address--gps').text.replace('\n', ' ').replace('\u00b0','').replace('Gps','').strip()
+        library_info['address'] = address
+
+        contacts = {}
+        contacts['phone'] = libraryArticle.find('a',class_='tel').text.strip()
+        contacts['email'] = libraryArticle.find('span',class_='spamspan').text.strip().replace(' [at] ', '@')
+        library_info['contacts'] = contacts
+
+        closed_dates = []
+        for dl in libraryArticle.find_all('dl',class_='library__date-closed'):
+            date = dl.dt.text.strip()
+            reason = dl.dd.text.strip()
+            closed_dates.append({'date': date, 'reason': reason})
+        library_info['closed_dates'] = closed_dates
+
+        _LOGGER.debug(f"librarydetails {json.dumps(library_info,indent=4)}") 
+        return library_info
 
     # loand details example
     # {
@@ -234,7 +277,7 @@ class ComponentSession(object):
         #lidmaatschap based on url in location of response received
         response = self.s.get(f"{url}",headers=header,timeout=15,allow_redirects=False)
         loan_details_response_header = response.headers
-        _LOGGER.debug(f"bibliotheek.be lidmaatschap get result status code: {response.status_code} response: {response.text}")
+        _LOGGER.debug(f"bibliotheek.be lidmaatschap get result status code: {response.status_code}") # response: {response.text}")
         _LOGGER.debug(f"bibliotheek.be lidmaatschap get header: {response.headers}")
         assert response.status_code == 200
         soup = BeautifulSoup(response.text, 'html.parser')

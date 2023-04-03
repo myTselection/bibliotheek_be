@@ -44,6 +44,7 @@ async def dry_setup(hass, config_entry, async_add_devices):
     await componentData._force_update()
     assert componentData._userdetails is not None
     assert componentData._loandetails is not None
+    assert componentData._librarydetails is not None
     
     
     _LOGGER.debug(f"userdetails dry_setup {json.dumps(componentData._userdetails,indent=4)}") 
@@ -112,6 +113,7 @@ class ComponentData:
         self._session = ComponentSession()
         self._userdetails = None
         self._loandetails = dict()
+        self._librarydetails = dict()
         self._hass = hass
         self._lastupdate = None
         self._oauth_token = None
@@ -129,7 +131,7 @@ class ComponentData:
             for user_id, userdetail in self._userdetails.items():
                 url = userdetail.get('loans').get('url')
                 if url:
-                    _LOGGER.info(f"calling loan details {userdetail.get('account_details').get('userName')}")
+                    _LOGGER.info(f"Calling loan details {userdetail.get('account_details').get('userName')}")
                     loandetails = await self._hass.async_add_executor_job(lambda: self._session.loan_details(url))
                     assert loandetails is not None
                     username = userdetail.get('account_details').get('userName')
@@ -138,8 +140,16 @@ class ComponentData:
                         loan_info["user"] = username
                         loan_info["userid"] = user_id
                         loan_info["barcode"] = barcode
+                        libraryName = loan_info.get('library')
+                        libraryurl = f"{loan_info['url'].split('/resolver')[0]}/adres-en-openingsuren"
+                        if not self._librarydetails.get(libraryName):
+                            _LOGGER.info(f"Calling library details {userdetail.get('account_details').get('userName')}")
+                            librarydetails = await self._hass.async_add_executor_job(lambda: self._session.library_details(libraryurl))
+                            assert librarydetails is not None
+                            self._librarydetails[libraryName] = librarydetails
                     _LOGGER.debug(f"loandetails {json.dumps(loandetails,indent=4)}") 
                     self._loandetails[user_id] = loandetails
+
             self._lastupdate = datetime.now()
                 
     @Throttle(MIN_TIME_BETWEEN_UPDATES)
@@ -270,6 +280,7 @@ class ComponentLibrarySensor(Entity):
         self._num_loans = 0
         self._num_total_loans = 0
         self._loantypes = loanTypes
+        self._current_lbrarydetails = self._data._librarydetails.get(libraryName)
             
 
     @property
@@ -344,8 +355,13 @@ class ComponentLibrarySensor(Entity):
             "lowest_till_date": self._lowest_till_date,
             "num_loans": self._num_loans,
             "num_total_loans": self._num_total_loans,
-            "loandetails": self._loandetails
-            
+            "loandetails": self._loandetails,
+            "address": self._current_lbrarydetails.get('address').get('address'),
+            "GPS": self._current_lbrarydetails.get('address').get('gps'),
+            "phone": self._current_lbrarydetails.get('contacts').get('phone'),
+            "email": self._current_lbrarydetails.get('contacts').get('email'),
+            "opening_hours": self._current_lbrarydetails.get('hours'),
+            "closed_dates": self._current_lbrarydetails.get('closed_dates')            
         }
         attributes.update(self._loantypes)
         return attributes
