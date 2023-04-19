@@ -224,7 +224,14 @@ class ComponentSession(object):
 
         address = {}
         address['address'] = libraryArticle.find('div',class_='library__pane--address--address').text.replace('\n', ' ').replace('Adres','').replace('Toon op kaart','').strip().replace('         ',',')
-        address['gps'] = libraryArticle.find('div',class_='library__pane--address-address--gps').text.replace('\n', ' ').replace('\u00b0','').replace('Gps','').strip()
+        gps = libraryArticle.find('div',class_='library__pane--address-address--gps').text.replace('\n', ' ').replace('\u00b0','').replace('Gps','').strip()
+        gps = gps.strip().split('NB')
+        lat = gps[0]
+        lon = gps[1].strip().split('OL')[0]
+        library_info['lat'] = lat
+        library_info['lon'] = lon
+        _LOGGER.info(f"gps {gps} lat {lat} lon {lon}")
+
         library_info['address'] = address
 
         contacts = {}

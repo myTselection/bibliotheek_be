@@ -235,11 +235,13 @@ class ComponentUserSensor(Entity):
             "last update": self._last_update,
             "userid": self._userid,
             "barcode": self._barcode,
+            "barcode_url": f"https://barcodeapi.org/api/128/{self._barcode}",
             "num_loans": self._num_loans,
             "num_reservations": self._num_reservations,
             "open_amounts": self._open_amounts,
             "username": self._username,
             "libraryName": self._libraryName,
+            "entity_picture": "https://raw.githubusercontent.com/myTselection/bibliotheek_be/master/icon.png",
             "loandetails": self._loandetails
         }
 
@@ -312,12 +314,12 @@ class ComponentLibrarySensor(Entity):
                         self._days_left = loan_item.get('days_remaining')
                         self._lowest_till_date = loan_item.get('loan_till')
                         self._num_loans = 1
-                        if loan_item.get('extend_loan_id') == '':
+                        if loan_item.get('extend_loan_id') is None or loan_item.get('extend_loan_id','').strip() == '':
                             self._some_not_extendable = True
                     elif self._days_left == loan_item.get('days_remaining'):
                         _LOGGER.debug(f"library_name_loop same days {library_name_loop} {loan_item}")
                         self._num_loans += 1
-                        if loan_item.get('extend_loan_id') == '':
+                        if loan_item.get('extend_loan_id') is None or loan_item.get('extend_loan_id','').strip() == '':
                             self._some_not_extendable = True
         
         
@@ -357,7 +359,9 @@ class ComponentLibrarySensor(Entity):
             "num_total_loans": self._num_total_loans,
             "loandetails": self._loandetails,
             "address": self._current_lbrarydetails.get('address').get('address'),
-            "GPS": self._current_lbrarydetails.get('address').get('gps'),
+            "latitude": self._current_lbrarydetails.get('lat'),
+            "longitude": self._current_lbrarydetails.get('lon'),
+            "entity_picture": "https://raw.githubusercontent.com/myTselection/bibliotheek_be/master/icon.png",
             "phone": self._current_lbrarydetails.get('contacts').get('phone'),
             "email": self._current_lbrarydetails.get('contacts').get('email'),
             "opening_hours": self._current_lbrarydetails.get('hours'),
@@ -387,7 +391,7 @@ class ComponentLibrarySensor(Entity):
     @property
     def unit_of_measurement(self) -> str:
         """Return the unit of measurement this sensor expresses itself in."""
-        return "d"
+        return "days"
 
     @property
     def friendly_name(self) -> str:
@@ -431,14 +435,14 @@ class ComponentLibrariesWarningSensor(Entity):
                     self._lowest_till_date = loan_item.get('loan_till')
                     self._num_loans = 1
                     self._library_name = f"{loan_item.get('library')}"
-                    if loan_item.get('extend_loan_id') is None or loan_item.get('extend_loan_id','').trim() == '':
+                    if loan_item.get('extend_loan_id') is None or loan_item.get('extend_loan_id','').strip() == '':
                         self._some_not_extendable = True
                 elif self._days_left == loan_item.get('days_remaining'):
                     _LOGGER.debug(f"library_name_loop same days {library_name_loop} {loan_item}")
                     self._num_loans += 1
                     if loan_item.get('library') and loan_item.get('library') not in self._library_name:
                         self._library_name += f"{loan_item.get('library')} "
-                    if loan_item.get('extend_loan_id') is None or loan_item.get('extend_loan_id','').trim() == '':
+                    if loan_item.get('extend_loan_id') is None or loan_item.get('extend_loan_id','').strip() == '':
                         self._some_not_extendable = True
         
         
@@ -476,6 +480,7 @@ class ComponentLibrariesWarningSensor(Entity):
             "num_loans": self._num_loans,
             "num_total_loans": self._num_total_loans,
             "library_name":  self._library_name,
+            "entity_picture": "https://raw.githubusercontent.com/myTselection/bibliotheek_be/master/icon.png",
             "refresh_required": False
         }
         return attributes
@@ -501,7 +506,7 @@ class ComponentLibrariesWarningSensor(Entity):
     @property
     def unit_of_measurement(self) -> str:
         """Return the unit of measurement this sensor expresses itself in."""
-        return "d"
+        return "days"
 
     @property
     def friendly_name(self) -> str:
