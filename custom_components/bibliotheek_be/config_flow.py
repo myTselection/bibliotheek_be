@@ -81,7 +81,7 @@ class ComponentFlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
     #     return ComponentOptionsHandler(config_entry)
 
 
-class ComponentOptionsHandler(config_entries.OptionsFlow, Mixin):
+class ComponentOptionsHandler(config_entries.OptionsFlow):
     """Now this class isnt like any normal option handlers.. as ha devs option seems think options is
     #  supposed to be EXTRA options, i disagree, a user should be able to edit anything.."""
 
