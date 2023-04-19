@@ -215,8 +215,10 @@ content: >-
 
   {% if state_attr(user,'num_loans') > 0 %}
 
-  ## {{state_attr(user,'username') }} {{state_attr(user,'libraryName') }}
-  (Barcode: {{state_attr(user,'barcode') }}):
+  ## {{state_attr(user,'username') }} {{state_attr(user,'libraryName') }}:
+
+  - Kaart {{state_attr(user,'barcode') }}: 
+      [<img src="{{state_attr(user,'barcode_url') }}" height=100></img>]({{state_attr(user,'barcode_url') }})
 
   - Gereserveerde stuks: {{state_attr(user,'num_reservations') }}
 
@@ -264,6 +266,7 @@ content: >-
 
   {% endfor %}
 title: Gebruikers
+
 ```
 </details>
 
