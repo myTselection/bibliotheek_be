@@ -7,7 +7,7 @@
 [![GitHub commit activity](https://img.shields.io/github/commit-activity/m/myTselection/bibliotheek_be.svg)](https://github.com/myTselection/bibliotheek_be/graphs/commit-activity)
 
 # Bibliotheek.be
-[bibliotheek.be](https://www.bibliotheek.be/) Home Assistant custom component. It provides a clear overview of all items loaned a the different libraries by different users linked to the main account (eg children). An overview off all items per library or an overview of all items per user can be shown, see complex markdown examples below. Based on the sensors, automations can be build to get warned: eg when little time is left and certainly when extension is not possible.
+[bibliotheek.be](https://www.bibliotheek.be/) Home Assistant custom component. It provides a clear overview of all items loaned a the different libraries by different users linked to an main account (eg children). An overview off all items per library or an overview of all items per user can be shown, see complex markdown examples below. Based on the sensors, automations can be build to get warned: eg when little time is left and certainly when extension is not possible. By using the custom services available in this integration, the loans can be extended automatically, which can be integrated in automations.
 
 <p align="center"><img src="https://raw.githubusercontent.com/myTselection/bibliotheek_be/master/icon.png"/></p>
 
@@ -215,8 +215,10 @@ content: >-
 
   {% if state_attr(user,'num_loans') > 0 %}
 
-  ## {{state_attr(user,'username') }} {{state_attr(user,'libraryName') }}
-  (Barcode: {{state_attr(user,'barcode') }}):
+  ## {{state_attr(user,'username') }} {{state_attr(user,'libraryName') }}:
+
+  - Kaart {{state_attr(user,'barcode') }}: 
+      [<img src="{{state_attr(user,'barcode_url') }}" height=100></img>]({{state_attr(user,'barcode_url') }})
 
   - Gereserveerde stuks: {{state_attr(user,'num_reservations') }}
 
@@ -264,6 +266,7 @@ content: >-
 
   {% endfor %}
 title: Gebruikers
+
 ```
 </details>
 
