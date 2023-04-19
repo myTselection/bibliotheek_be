@@ -42,36 +42,7 @@ def create_schema(entry, option=False):
 
     return data_schema
 
-
-class Mixin:
-    async def test_setup(self, user_input):
-        client = async_get_clientsession(self.hass)
-
-        try:
-            check_settings(user_input, self.hass)
-        except ValueError:
-            self._errors["base"] = "no_valid_settings"
-            return False
-
-        # This is what we really need.
-        username = None
-
-        if user_input.get(CONF_USERNAME):
-            username = user_input.get(CONF_USERNAME)
-        else:
-            self._errors["base"] = "missing username"
-            
-            
-        password = None
-
-        if user_input.get(CONF_PASSWORD):
-            password = user_input.get(CONF_PASSWORD)
-        else:
-            self._errors["base"] = "missing password"
-            
-
-
-class ComponentFlowHandler(Mixin, config_entries.ConfigFlow, domain=DOMAIN):
+class ComponentFlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
     """Config flow for component."""
 
     VERSION = 1
@@ -85,7 +56,6 @@ class ComponentFlowHandler(Mixin, config_entries.ConfigFlow, domain=DOMAIN):
         """Handle a flow initialized by the user."""
 
         if user_input is not None:
-            valid = await self.test_setup(user_input)
             return self.async_create_entry(title=NAME, data=user_input)
 
         return await self._show_config_form(user_input)
@@ -131,19 +101,7 @@ class ComponentOptionsHandler(config_entries.OptionsFlow, Mixin):
     async def async_step_edit(self, user_input):
         # edit does not work.
         if user_input is not None:
-            await self.test_setup(user_input)
-            if ok:
-                self.hass.config_entries.async_update_entry(
-                    self.config_entry, data=user_input
-                )
-                return self.async_create_entry(title="", data={})
-            else:
-                self._errors["base"] = "missing data options handler"
-                # not suere this should be config_entry or user_input.
-                return self.async_show_form(
-                    step_id="edit",
-                    data_schema=vol.Schema(
-                        create_schema(self.config_entry, option=True)
-                    ),
-                    errors=self._errors,
-                )
+            self.hass.config_entries.async_update_entry(
+                self.config_entry, data=user_input
+            )
+            return self.async_create_entry(title="", data={})

@@ -230,7 +230,7 @@ class ComponentSession(object):
         lon = gps[1].strip().split('OL')[0]
         library_info['lat'] = lat
         library_info['lon'] = lon
-        _LOGGER.info(f"gps {gps} lat {lat} lon {lon}")
+        _LOGGER.debug(f"gps {gps} lat {lat} lon {lon}")
 
         library_info['address'] = address
 
