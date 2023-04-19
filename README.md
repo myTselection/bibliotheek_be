@@ -217,34 +217,38 @@ content: >-
 
   {% if state_attr(user,'num_loans') > 0 %}
 
-  ## {{state_attr(user,'username') }} {{state_attr(user,'libraryName') }}:
+  <details><summary><b>{{state_attr(user,'username') }}
+  {{state_attr(user,'libraryName') }}:</b></summary>
+    
+    - Kaart {{state_attr(user,'barcode') }}: 
+        [<img src="{{state_attr(user,'barcode_url') }}" height=100></img>]({{state_attr(user,'barcode_url') }})
+    
+    - Gereserveerde stuks: {{state_attr(user,'num_reservations') }}
+    
+    - Uitstaande boetes: {{state_attr(user,'open_amounts') }}
+      {% if state_attr(user,'num_loans') > 0 %}
+      {% set all_books = state_attr(user,'loandetails').values()  |sort(attribute="days_remaining", reverse=False)%}
+    - In totaal {{state_attr(user,'num_loans') }} uitgeleend{% if all_books %}
+        {% for book in all_books %}
+        - <details><summary>{% if book.extend_loan_id %}{{ strptime(book.loan_till, "%d/%m/%Y").strftime("%a %d/%m/%Y") }}{% else %}<b>{{ strptime(book.loan_till, "%d/%m/%Y").strftime("%a %d/%m/%Y") }}</b>{% endif %}: {{ book.title }} ~ {{ book.author }}</summary> 
+    
+            |  |  |
+            | :--- | :--- |
+            | Binnen: | {{ book.days_remaining }} dagen |
+            | Verlenging: | {% if book.extend_loan_id %}verlengbaar{% else %}**Niet verlengbaar**{% endif %} |
+            | Bibliotheek: | <a href="{{book.url}}" target="_blank">{{book.library}}</a> |
+            | Type: | {% if book.loan_type == 'Unknown' %}Onbekend{% else %}{{book.loan_type}}{% endif %} |
+            | Afbeelding: | <img src="{{ book.image_src }}" height="100"/> |
+          </details>
+        {% endfor %}
+      {% endif %}
+      {% else %}
+    - Geen uitleningen
+      {% endif %}
+      Laatst bijgewerkt: {{state_attr(user,'last update')  | as_timestamp | timestamp_custom("%d-%m-%Y %H:%M")}}
+    
+    </details> 
 
-  - Kaart {{state_attr(user,'barcode') }}: 
-      [<img src="{{state_attr(user,'barcode_url') }}" height=100></img>]({{state_attr(user,'barcode_url') }})
-
-  - Gereserveerde stuks: {{state_attr(user,'num_reservations') }}
-
-  - Uitstaande boetes: {{state_attr(user,'open_amounts') }}
-    {% if state_attr(user,'num_loans') > 0 %}
-    {% set all_books = state_attr(user,'loandetails').values()  |sort(attribute="days_remaining", reverse=False)%}
-  - In totaal {{state_attr(user,'num_loans') }} uitgeleend{% if all_books %}
-      {% for book in all_books %}
-      - <details><summary>{% if book.extend_loan_id %}{{ strptime(book.loan_till, "%d/%m/%Y").strftime("%a %d/%m/%Y") }}{% else %}<b>{{ strptime(book.loan_till, "%d/%m/%Y").strftime("%a %d/%m/%Y") }}</b>{% endif %}: {{ book.title }} ~ {{ book.author }}</summary> 
-
-          |  |  |
-          | :--- | :--- |
-          | Binnen: | {{ book.days_remaining }} dagen |
-          | Verlenging: | {% if book.extend_loan_id %}verlengbaar{% else %}**Niet verlengbaar**{% endif %} |
-          | Bibliotheek: | <a href="{{book.url}}" target="_blank">{{book.library}}</a> |
-          | Type: | {% if book.loan_type == 'Unknown' %}Onbekend{% else %}{{book.loan_type}}{% endif %} |
-          | Afbeelding: | <img src="{{ book.image_src }}" height="100"/> |
-        </details>
-      {% endfor %}
-    {% endif %}
-    {% else %}
-  - Geen uitleningen
-    {% endif %}
-    Laatst bijgewerkt: {{state_attr(user,'last update')  | as_timestamp | timestamp_custom("%d-%m-%Y %H:%M")}}
   {% endif %}
 
   {% endfor %}
@@ -255,17 +259,22 @@ content: >-
 
   {% if state_attr(user,'num_loans') == 0 %}
 
-  ## {{state_attr(user,'username') }} {{state_attr(user,'libraryName') }}
+  <details><summary><b>{{state_attr(user,'username') }}
+  {{state_attr(user,'libraryName') }}:</b></summary>
+    
+    - Kaart {{state_attr(user,'barcode') }}:
+    [<img src="{{state_attr(user,'barcode_url') }}" height=100></img>]({{state_attr(user,'barcode_url') }})
+    
+    - Gereserveerde stuks: {{state_attr(user,'num_reservations') }}
+    
+    - Uitstaande boetes: {{state_attr(user,'open_amounts') }}
+    
+    - Geen uitleningen
+    
+      Laatst bijgewerkt: {{state_attr(user,'last update')  | as_timestamp | timestamp_custom("%d-%m-%Y %H:%M")}}
 
-  - Kaart {{state_attr(user,'barcode') }}: 
-      [<img src="{{state_attr(user,'barcode_url') }}" height=100></img>]({{state_attr(user,'barcode_url') }})
+  </details>
 
-  - Gereserveerde stuks: {{state_attr(user,'num_reservations') }}
-
-  - Uitstaande boetes: {{state_attr(user,'open_amounts') }}
-
-  - Geen uitleningen
-    Laatst bijgewerkt: {{state_attr(user,'last update')  | as_timestamp | timestamp_custom("%d-%m-%Y %H:%M")}}
   {% endif %}
 
   {% endfor %}
