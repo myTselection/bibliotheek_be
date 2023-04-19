@@ -161,7 +161,7 @@ content: >-
     | Binnen: | {{ book.days_remaining }} dagen |
     | Verlenging: | {% if book.extend_loan_id %}<a href="https://{{state_attr(library,'libraryName') }}.bibliotheek.be/mijn-bibliotheek/lidmaatschappen/{{book.userid}}/uitleningen/verlengen?loan-ids={{book.extend_loan_id}}" target="_blank">verlengbaar</a>{% else %}**Niet verlengbaar**{% endif %} |
     | Bibliotheek: | <a href="{{book.url}}" target="_blank">{{book.library}}</a> |
-    | Gebruiker: | {{book.user}} ({{book.barcode}}) |
+    | Gebruiker: | [{{book.user}} ({{book.barcode}})](https://barcodeapi.org/api/128/{{book.barcode}}) |
     | Type: | {% if book.loan_type == 'Unknown' %}Onbekend{% else %}{{book.loan_type}}{% endif %} |
     | Afbeelding: | <img src="{{ book.image_src }}" height="100"/> |
 
@@ -182,7 +182,7 @@ content: >-
 
 
         - Adres: {{state_attr(library,'address')}}
-        - GPS: [{{state_attr(library,'GPS')}}](http://maps.google.com/maps?daddr={{state_attr(library,'GPS').split('NB')[0]}},{{state_attr(library,'GPS').split(' ')[1] | replace('OL','')}}&ll=)
+        - GPS: [{{state_attr(library,'latitude')}},{{state_attr(library,'longitude')}}](http://maps.google.com/maps?daddr={{state_attr(library,'latitude')}},{{state_attr(library,'longitude')}}&ll=)
         - Tel: {{state_attr(library,'phone')}}
         - Email: {{state_attr(library,'email')}}
         - Openingsuren: 
