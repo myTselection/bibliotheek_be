@@ -422,6 +422,7 @@ class ComponentLibrariesWarningSensor(Entity):
         self._num_total_loans = 0
         self._some_not_extendable = False
         self._library_name = ""
+        self._days_left = None
         
         for user_id, loan_data in self._data._loandetails.items():
             _LOGGER.debug(f"library warning loop {user_id}") 
