@@ -132,23 +132,30 @@ All other files just contain boilerplat code for the integration to work wtihin 
 
 ```
 type: markdown
-content: >-
-  <img
+content: >
+  [<img
   src="https://raw.githubusercontent.com/myTselection/bibliotheek_be/master/icon.png"
-  height="100"/>
+  height="100"/>](https://beersel.bibliotheek.be)
 
-  {% set libraries = states | selectattr("entity_id",
-  "match","^sensor.bibliotheek_be_bib*") | rejectattr("state",
-  "match","unavailable") | list %}
+  {% if state_attr('sensor.bibliotheek_be_warning','refresh_required') %}
+
+  De gegevens moeten nog bijgewerkt worden!
+
+  {% endif %}
+
+  {% set libraries = states |
+  selectattr("entity_id","match","^sensor.bibliotheek_be_bib*") |
+  rejectattr("state", "match","unavailable") | list %}
 
   {% for library_device in libraries %}
     {% set library = library_device.entity_id %}
     ## Bib {{state_attr(library,'libraryName') }}:
     {% set all_books = state_attr(library,'loandetails')| list |sort(attribute="days_remaining", reverse=False) %}
+    {% if all_books %}
     {% set urgent_books = all_books | selectattr("days_remaining", "eq",int(state_attr(library,'days_left'))) | list |sort(attribute="extend_loan_id", reverse=False)%}
     {% set other_books = all_books | rejectattr("days_remaining", "eq",int(state_attr(library,'days_left'))) | list |sort(attribute="days_remaining", reverse=False)%}
-    {% if all_books %}
-    - {{state_attr(library,'num_loans') }} stuk{% if state_attr(library,'num_loans')|int > 1 %}s{% endif %} in te leveren binnen **{{states(library)}}** dag{% if states(library)|int > 1 %}en{% endif %}: {{strptime(state_attr(library,'lowest_till_date'), "%d/%m/%Y").strftime("%a %d/%m/%Y") }}
+
+    - {{state_attr(library,"num_loans") }} stuk{% if state_attr(library,'num_loans')|int > 1 %}s{% endif %} in te leveren binnen **{{states(library)}}** dag{% if states(library)|int > 1 %}en{% endif %}: {{strptime(state_attr(library,'lowest_till_date'), "%d/%m/%Y").strftime("%a %d/%m/%Y") }}
 
   <details>
       <summary>Toon details:</summary>
@@ -193,6 +200,8 @@ content: >-
            {% for closed in state_attr(library,'closed_dates') %}
            -  {{closed.date}}: {{closed.reason}} 
            {% endfor %}
+  Laatst bijgewerkt: {{state_attr(library,'last update')| as_timestamp |
+  timestamp_custom("%d %h %H:%M")}}
     {% endfor %}
 
 ```
