@@ -426,25 +426,26 @@ class ComponentLibrariesWarningSensor(Entity):
         
         for user_id, loan_data in self._data._loandetails.items():
             _LOGGER.debug(f"library warning loop {user_id}") 
-            for loan_id, loan_item in loan_data.items():
-                library_name_loop = loan_item.get('library')
-                _LOGGER.debug(f"library_name_loop {library_name_loop}") 
-                self._num_total_loans += 1
-                if loan_item.get('days_remaining') and ((self._days_left is None) or (self._days_left > loan_item.get('days_remaining'))):
-                    _LOGGER.debug(f"library_name_loop less days {library_name_loop} {loan_item}")
-                    self._days_left = loan_item.get('days_remaining')
-                    self._lowest_till_date = loan_item.get('loan_till')
-                    self._num_loans = 1
-                    self._library_name = f"{loan_item.get('library')}"
-                    if loan_item.get('extend_loan_id') is None or loan_item.get('extend_loan_id','').strip() == '':
-                        self._some_not_extendable = True
-                elif self._days_left == loan_item.get('days_remaining'):
-                    _LOGGER.debug(f"library_name_loop same days {library_name_loop} {loan_item}")
-                    self._num_loans += 1
-                    if loan_item.get('library') and loan_item.get('library') not in self._library_name:
-                        self._library_name += f"{loan_item.get('library')} "
-                    if loan_item.get('extend_loan_id') is None or loan_item.get('extend_loan_id','').strip() == '':
-                        self._some_not_extendable = True
+            if loan_data:
+                for loan_id, loan_item in loan_data.items():
+                    library_name_loop = loan_item.get('library')
+                    _LOGGER.debug(f"library_name_loop {library_name_loop}") 
+                    self._num_total_loans += 1
+                    if loan_item.get('days_remaining') and ((self._days_left is None) or (self._days_left > loan_item.get('days_remaining'))):
+                        _LOGGER.debug(f"library_name_loop less days {library_name_loop} {loan_item}")
+                        self._days_left = loan_item.get('days_remaining')
+                        self._lowest_till_date = loan_item.get('loan_till')
+                        self._num_loans = 1
+                        self._library_name = f"{loan_item.get('library')}"
+                        if loan_item.get('extend_loan_id') is None or loan_item.get('extend_loan_id','').strip() == '':
+                            self._some_not_extendable = True
+                    elif self._days_left == loan_item.get('days_remaining'):
+                        _LOGGER.debug(f"library_name_loop same days {library_name_loop} {loan_item}")
+                        self._num_loans += 1
+                        if loan_item.get('library') and loan_item.get('library') not in self._library_name:
+                            self._library_name += f"{loan_item.get('library')} "
+                        if loan_item.get('extend_loan_id') is None or loan_item.get('extend_loan_id','').strip() == '':
+                            self._some_not_extendable = True
         
         
     async def async_will_remove_from_hass(self):
