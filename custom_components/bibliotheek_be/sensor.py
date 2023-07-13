@@ -426,7 +426,7 @@ class ComponentLibrariesWarningSensor(Entity):
         
         for user_id, loan_data in self._data._loandetails.items():
             _LOGGER.debug(f"library warning loop {user_id}") 
-            if loan_data:
+            if loan_data != None:
                 for loan_id, loan_item in loan_data.items():
                     library_name_loop = loan_item.get('library')
                     _LOGGER.debug(f"library_name_loop {library_name_loop}") 
