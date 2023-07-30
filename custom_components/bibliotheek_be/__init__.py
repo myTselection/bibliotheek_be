@@ -129,7 +129,7 @@ def register_services(hass, config_entry):
                             state_warning_sensor = hass.states.get(f"sensor.{DOMAIN}_warning")
                             _LOGGER.debug(f"state_warning_sensor sensor.{DOMAIN}_warning {state_warning_sensor}")
                             state_warning_sensor_attributes = dict(state_warning_sensor.attributes)
-                            state_warning_sensor_attributes["refresh_required"] = (extension_confirmation > 0)
+                            state_warning_sensor_attributes["refresh_required"] = state_warning_sensor_attributes.get("refresh_required", False) or (extension_confirmation > 0)
                             _LOGGER.debug(f"state_warning_sensor attributes sensor.{DOMAIN}_warning: {state_warning_sensor_attributes}")
                             await hass.async_add_executor_job(lambda: hass.states.set(f"sensor.{DOMAIN}_warning",state_warning_sensor.state,state_warning_sensor_attributes))
                         else:
@@ -173,7 +173,7 @@ def register_services(hass, config_entry):
                 extension_confirmation = await hass.async_add_executor_job(lambda: session.extend_multiple_ids(url, extend_load_ids, True))
                 state_warning_sensor = hass.states.get(f"sensor.{DOMAIN}_warning")
                 state_warning_sensor_attributes = dict(state_warning_sensor.attributes)
-                state_warning_sensor_attributes["refresh_required"] = (extension_confirmation > 0)
+                state_warning_sensor_attributes["refresh_required"] = state_warning_sensor_attributes.get("refresh_required", False) or (extension_confirmation > 0)
                 await hass.async_add_executor_job(lambda: hass.states.set(f"sensor.{DOMAIN}_warning",state_warning_sensor.state,state_warning_sensor_attributes))
 
     async def handle_extend_loans_user(call):
@@ -198,7 +198,7 @@ def register_services(hass, config_entry):
                     extension_confirmation = await hass.async_add_executor_job(lambda: session.extend_all(url, int(max_days_remaining), True))
                     state_warning_sensor = hass.states.get(f"sensor.{DOMAIN}_warning")
                     state_warning_sensor_attributes = dict(state_warning_sensor.attributes)
-                    state_warning_sensor_attributes["refresh_required"] = (extension_confirmation > 0)
+                    state_warning_sensor_attributes["refresh_required"] = state_warning_sensor_attributes.get("refresh_required", False) or (extension_confirmation > 0)
                     await hass.async_add_executor_job(lambda: hass.states.set(f"sensor.{DOMAIN}_warning",state_warning_sensor.state,state_warning_sensor_attributes))
                 break
 
@@ -222,7 +222,7 @@ def register_services(hass, config_entry):
                 state_warning_sensor = hass.states.get(f"sensor.{DOMAIN}_warning")
                 _LOGGER.debug(f"state_warning_sensor sensor.{DOMAIN}_warning {state_warning_sensor}")
                 state_warning_sensor_attributes = dict(state_warning_sensor.attributes)
-                state_warning_sensor_attributes["refresh_required"] = (extension_confirmation > 0)
+                state_warning_sensor_attributes["refresh_required"] = state_warning_sensor_attributes.get("refresh_required", False) or (extension_confirmation > 0)
                 await hass.async_add_executor_job(lambda: hass.states.set(f"sensor.{DOMAIN}_warning",state_warning_sensor.state,state_warning_sensor_attributes))
 
     async def handle_update(call):
