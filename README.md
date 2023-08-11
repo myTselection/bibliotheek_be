@@ -364,3 +364,50 @@ action:
       message: Al de boeken die konden verlengd worden, werden verlengd.
 mode: single
 ```
+
+### Example script to create a persistent notification for all books
+<details><summary>When going to the library, I often want to make sure all books are packed. So I created a script that will make a persisten notification for each book lended. This way, when the book is added into our basket, the notification can easily be dismissed and remaining books can be searched.</summary>
+
+```
+alias: Boeken notificaties
+sequence:
+  - variables:
+      libraries: >-
+        {{states | selectattr("entity_id","match","^sensor.bibliotheek_be_bib*")
+        | rejectattr("state", "match","unavailable") |
+        map(attribute='entity_id') | list}}
+  - repeat:
+      for_each: "{{libraries}}"
+      sequence:
+        - variables:
+            library: "{{repeat.item}}"
+        - repeat:
+            for_each: >-
+              {{state_attr(library,'loandetails')| list
+              |sort(attribute="days_remaining", reverse=True)| list}}
+            sequence:
+              - variables:
+                  book: "{{repeat.item}}"
+              - service: notify.persistent_notification
+                data:
+                  title: "{{book.title}} ~ {{book.author}}"
+                  message: >-
+                    {% if book.extend_loan_id == '' %}<b>Kan NIET verlengd
+                    worden</b><br>{% endif %} {{ book.days_remaining }} dagen:
+                    {{strptime(book.loan_till,'%d/%m/%Y').strftime('%a
+                    %d/%m/%Y')}}<br> {{state_attr(library,'libraryName')}}
+        - service: notify.persistent_notification
+          data:
+            title: "{{state_attr(library,'libraryName')}}"
+            message: >-
+              - Openingsuren: {% for key,value in
+              state_attr(library,'opening_hours').items() %} 
+                  - {{key}}: {{value | join(',')}}{% if not value %}Gesloten{% endif %}{% endfor %} 
+              - Sluitingsdagen: {% for closed in
+              state_attr(library,'closed_dates') %} 
+                  - {{closed.date}}: {{closed.reason}}{% endfor %}-
+mode: single
+icon: mdi:basket-check
+
+```
+</details>
