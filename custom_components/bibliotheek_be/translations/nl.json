@@ -1,0 +1,101 @@
+{
+    "config": {
+        "step": {
+            "user": {
+                "description": "Stel een Bibliotheek.be-sensor in. Gebruikersnaam en wachtwoord zijn vereist.",
+                "data": {
+                    "username": "Gebruikersnaam",
+                    "password": "Wachtwoord"
+                }
+            },
+            "edit": {
+                "description": "Stel een Bibliotheek.be-sensor in. Gebruikersnaam en wachtwoord zijn vereist.",
+                "data": {
+                    "username": "Gebruikersnaam",
+                    "password": "Wachtwoord"
+                }
+            }
+        },
+        "error": {
+            "missing username": "Geef een geldige gebruikersnaam op",
+            "missing password": "Geef een geldig wachtwoord op",
+            "missing data options handler": "Optiehandler mislukt",
+            "no_valid_settings": "Geen geldige instellingen. Geef gebruikersnaam en wachtwoord op in de HA-configuratie."
+        }
+    },
+    "options": {
+        "step": {
+            "edit": {
+                "description": "Stel een Bibliotheek.be-sensor in. Gebruikersnaam en wachtwoord zijn vereist.",
+                "data": {
+                    "username": "Gebruikersnaam",
+                    "password": "Wachtwoord"
+                }
+            }
+        },
+        "error": {
+            "missing username": "Geef een geldige gebruikersnaam op",
+            "missing password": "Geef een geldig wachtwoord op",
+            "missing data options handler": "Optiehandler mislukt",
+            "no_valid_settings": "Geen geldige instellingen. Geef gebruikersnaam en wachtwoord op in de HA-configuratie."
+        }
+    },
+    "services": {
+        "extend_loan": {
+            "name": "extend_loan",
+            "description": "Vraag verlenging aan van een lening voor een specifiek item als het aantal resterende dagen kleiner is dan of gelijk is aan max_days_remaining. Houd er rekening mee dat sommige leningen zonder extend_loan_id niet verlengd kunnen worden.",
+            "fields": {
+                "extend_loan_id": {
+                    "name": "extend_loan_id",
+                    "description": "extend_loan_id van het item dat moet verlengd worden"
+                },
+                "max_days_remaining": {
+                    "name": "max_days_remaining",
+                    "description": "Verleng de lening alleen als het aantal resterende dagen onder deze maximumwaarde ligt"
+                }
+            }
+        }, 
+        "extend_loans_library": {
+            "name": "extend_loans_library",
+            "description": "Vraag verlenging aan van alle leningen voor een bibliotheek waarbij het aantal resterende dagen kleiner is dan of gelijk is aan max_days_remaining. Houd er rekening mee dat sommige leningen zonder extend_loan_id niet verlengd kunnen worden.",
+            "fields": {
+                "library_name": {
+                    "name": "library_name",
+                    "description": "De naam van de bibliotheek"
+                },
+                "max_days_remaining": {
+                    "name": "max_days_remaining",
+                    "description": "Verleng de leningen alleen als het aantal resterende dagen onder deze maximumwaarde ligt"
+                }
+            }
+        }, 
+        "extend_loans_user": {
+            "name": "extend_loans_user",
+            "description": "Vraag verlenging aan van alle leningen voor een gebruiker waarbij het aantal resterende dagen kleiner is dan of gelijk is aan max_days_remaining. Houd er rekening mee dat sommige leningen zonder extend_loan_id niet verlengd kunnen worden.",
+            "fields": {
+                "barcode": {
+                    "name": "barcode",
+                    "description": "De barcode van de gebruiker"
+                },
+                "max_days_remaining": {
+                    "name": "max_days_remaining",
+                    "description": "Verleng de leningen alleen als het aantal resterende dagen onder deze maximumwaarde ligt"
+                }
+            }
+        }, 
+        "extend_all_loans": {
+            "name": "extend_all_loans",
+            "description": "Vraag verlenging aan van alle leningen voor alle gebruikers waarbij het aantal resterende dagen kleiner is dan of gelijk is aan max_days_remaining. Houd er rekening mee dat sommige leningen zonder extend_loan_id niet verlengd kunnen worden.",
+            "fields": {
+                "max_days_remaining": {
+                    "name": "max_days_remaining",
+                    "description": "Verleng de leningen alleen als het aantal resterende dagen onder deze maximumwaarde ligt"
+                }
+            }
+        }, 
+        "update": {
+            "name": "update",
+            "description": "Dwing een update van de sensorgegevens af (standaardupdates zijn beperkt per uur)."
+        }
+    }
+}

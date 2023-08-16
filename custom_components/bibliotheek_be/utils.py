@@ -326,11 +326,6 @@ class ComponentSession(object):
                 except AttributeError:
                     loan_type = "Unknown"
                 try:
-                    days_remaining = book.find('div', class_='my-library-user-library-account-loans__loan-days').text.strip()
-                    days_remaining = int(days_remaining.lower().replace('nog ','').replace(' dagen','').replace(' dag',''))
-                except (AttributeError,ValueError):
-                    days_remaining = ""
-                try:
                     loan_from = book.find('div', class_='my-library-user-library-account-loans__loan-from-to')
                     loan_from = loan_from.select_one('.my-library-user-library-account-loans__loan-from-to > div > span:nth-of-type(2)').text
                 except AttributeError:
@@ -340,6 +335,11 @@ class ComponentSession(object):
                     loan_till = loan_till.select_one('.my-library-user-library-account-loans__loan-from-to > div:nth-of-type(2) > span:nth-of-type(2)').text
                 except AttributeError:
                     loan_till = ""
+                try:
+                    days_remaining = book.find('div', class_='my-library-user-library-account-loans__loan-days').text.strip()
+                    days_remaining = int(days_remaining.lower().replace('nog ','').replace(' dagen','').replace(' dag',''))
+                except (AttributeError,ValueError):
+                    days_remaining = 0
                 try:
                     extend_loan_id = book.find('div', class_='my-library-user-library-account-loans__extend-loan')
                     extend_loan_id = extend_loan_id.select_one('input[type="checkbox"]')['id']
