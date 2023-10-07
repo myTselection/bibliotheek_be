@@ -14,6 +14,7 @@
 
 ## Installation
 - [HACS](https://hacs.xyz/): add url https://github.com/myTselection/bibliotheek_be as custom repository (HACS > Integration > option: Custom Repositories)
+	- [![Open your Home Assistant instance and open the repository inside the Home Assistant Community Store.](https://my.home-assistant.io/badges/hacs_repository.svg?style=flat-square)](https://my.home-assistant.io/redirect/hacs_repository/?owner=myTselection&repository=bibliotheek_be&category=integration)
 - Restart Home Assistant
 - Add 'Bibliotheek.be' integration via HA Settings > 'Devices and Services' > 'Integrations'
 - Provide Bibliotheek.be username and password
