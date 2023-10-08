@@ -227,7 +227,7 @@ class ComponentUserSensor(Entity):
     def unique_id(self) -> str:
         """Return the name of the sensor."""
         return (
-            f"{NAME} {self._userid}"
+            f"{NAME} {self._username} {self._libraryName}"
         )
 
     @property
