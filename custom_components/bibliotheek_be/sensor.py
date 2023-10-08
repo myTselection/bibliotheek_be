@@ -232,7 +232,7 @@ class ComponentUserSensor(Entity):
 
     @property
     def name(self) -> str:
-        return f"{NAME} {self._username} {self._libraryName}"
+        return self.unique_id
 
     @property
     def extra_state_attributes(self) -> dict:
