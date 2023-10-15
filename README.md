@@ -69,7 +69,7 @@ Sensors `Bibliotheek.be` should become available with the number of items lent o
 	
 	</details>
 - Following services `bibliotheek_be` will be available:
-	- <details><summary><code>bibliotheek_be.extend_loan</code>: extend a single item, based on extend_loan_id, if the days_remaining is less than or equal the max set</summary> 
+	- <details><summary><code>bibliotheek_be.extend_loan</code>: extend a single item, based on `extend_loan_id`, if the `days_remaining` is less than or equal the max set</summary> 
 	
 		```
 		service: bibliotheek_be.extend_loan
@@ -80,7 +80,7 @@ Sensors `Bibliotheek.be` should become available with the number of items lent o
 		
 	  </details>
 	
-	- <details><summary><code>bibliotheek_be.extend_loans_library</code>: extend all loans of a library that have days_remaining less than or equal the max set</summary>
+	- <details><summary><code>bibliotheek_be.extend_loans_library</code>: extend all loans of a library that have `days_remaining` less than or equal the max set</summary>
 	
 		```
 		service: bibliotheek_be.extend_loans_library
@@ -91,7 +91,7 @@ Sensors `Bibliotheek.be` should become available with the number of items lent o
 		  
 	  </details>
 	  
-	- <details><summary><code>bibliotheek_be.extend_loans_user</code>: extend all loans of a user that have days_remaining less than or equal the max set</summary>
+	- <details><summary><code>bibliotheek_be.extend_loans_user</code>: extend all loans of a user that have `days_remaining` less than or equal the max set</summary>
 	
 		```
 		service: bibliotheek_be.extend_loan
@@ -102,7 +102,7 @@ Sensors `Bibliotheek.be` should become available with the number of items lent o
 		  
           </details>
 	  
-	- <details><summary><code>bibliotheek_be.extend_all_loans</code>: extend all loans that have days_remaining less than or equal the max set</summary>
+	- <details><summary><code>bibliotheek_be.extend_all_loans</code>: extend all loans that have `days_remaining` less than or equal the max set</summary>
 	
 		```
 		service: bibliotheek_be.extend_loan
