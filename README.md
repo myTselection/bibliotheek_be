@@ -102,7 +102,7 @@ Sensors `Bibliotheek.be` should become available with the number of items lent o
 		  
           </details>
 	  
-	- <details><summary><code>bibliotheek_be.extend_all_loans</code>: extend all loans that have <code>>days_remaining</code less than or equal the max set</summary>
+	- <details><summary><code>bibliotheek_be.extend_all_loans</code>: extend all loans that have <code>days_remaining</code> less than or equal the max set</summary>
 	
 		```
 		service: bibliotheek_be.extend_loan
