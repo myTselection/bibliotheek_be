@@ -1,4 +1,4 @@
-[![hacs_badge](https://img.shields.io/badge/HACS-Custom-41BDF5.svg)](https://github.com/hacs/integration)
+[![HACS Default](https://img.shields.io/badge/HACS-Default-blue.svg)](https://github.com/hacs/default)
 [![GitHub release](https://img.shields.io/github/release/myTselection/bibliotheek_be.svg)](https://github.com/myTselection/bibliotheek_be/releases)
 ![GitHub repo size](https://img.shields.io/github/repo-size/myTselection/bibliotheek_be.svg)
 
@@ -13,7 +13,7 @@
 
 
 ## Installation
-- [HACS](https://hacs.xyz/): add url https://github.com/myTselection/bibliotheek_be as custom repository (HACS > Integration > option: Custom Repositories)
+- [HACS](https://hacs.xyz/): search for the integration in the list of HACS
 	- [![Open your Home Assistant instance and open the repository inside the Home Assistant Community Store.](https://my.home-assistant.io/badges/hacs_repository.svg?style=flat-square)](https://my.home-assistant.io/redirect/hacs_repository/?owner=myTselection&repository=bibliotheek_be&category=integration)
 - Restart Home Assistant
 - Add 'Bibliotheek.be' integration via HA Settings > 'Devices and Services' > 'Integrations'
@@ -69,7 +69,7 @@ Sensors `Bibliotheek.be` should become available with the number of items lent o
 	
 	</details>
 - Following services `bibliotheek_be` will be available:
-	- <details><summary><code>bibliotheek_be.extend_loan</code>: extend a single item, based on extend_loan_id, if the days_remaining is less than or equal the max set</summary> 
+	- <details><summary><code>bibliotheek_be.extend_loan</code>: extend a single item, based on <code>extend_loan_id</code>, if the <code>days_remaining</code> is less than or equal the max set</summary> 
 	
 		```
 		service: bibliotheek_be.extend_loan
@@ -80,7 +80,7 @@ Sensors `Bibliotheek.be` should become available with the number of items lent o
 		
 	  </details>
 	
-	- <details><summary><code>bibliotheek_be.extend_loans_library</code>: extend all loans of a library that have days_remaining less than or equal the max set</summary>
+	- <details><summary><code>bibliotheek_be.extend_loans_library</code>: extend all loans of a library that have <code>days_remaining</code> less than or equal the max set</summary>
 	
 		```
 		service: bibliotheek_be.extend_loans_library
@@ -91,7 +91,7 @@ Sensors `Bibliotheek.be` should become available with the number of items lent o
 		  
 	  </details>
 	  
-	- <details><summary><code>bibliotheek_be.extend_loans_user</code>: extend all loans of a user that have days_remaining less than or equal the max set</summary>
+	- <details><summary><code>bibliotheek_be.extend_loans_user</code>: extend all loans of a user that have <code>days_remaining</code> less than or equal the max set</summary>
 	
 		```
 		service: bibliotheek_be.extend_loan
@@ -102,7 +102,7 @@ Sensors `Bibliotheek.be` should become available with the number of items lent o
 		  
           </details>
 	  
-	- <details><summary><code>bibliotheek_be.extend_all_loans</code>: extend all loans that have days_remaining less than or equal the max set</summary>
+	- <details><summary><code>bibliotheek_be.extend_all_loans</code>: extend all loans that have <code>days_remaining</code> less than or equal the max set</summary>
 	
 		```
 		service: bibliotheek_be.extend_loan
