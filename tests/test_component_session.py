@@ -3,10 +3,10 @@ import requests
 import logging
 import json
 # from "../custom_components/bibliotheek_be/utils" import .
-import sys
-sys.path.append('../custom_components/bibliotheek_be/')
-from utils import ComponentSession
+# import sys
 from secret import USERNAME, PASSWORD
+# sys.path.append('../custom_components/bibliotheek_be/')
+from utils import ComponentSession
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -37,7 +37,7 @@ class TestComponentSession(unittest.TestCase):
                 self.assertIsNotNone(loandetails)
                 
                 _LOGGER.info(f"calling extend_all")
-                num_extensions = self.session.extend_all(url, False)
+                num_extensions = self.session.extend_all(url, 1, False)
                 _LOGGER.info(f"num of extensions found: {num_extensions}")
                 
         # Test login failure
@@ -47,5 +47,10 @@ class TestComponentSession(unittest.TestCase):
             self.assertEqual(self.session.userdetails,{})
         except AssertionError:
             self.assertEqual(self.session.userdetails,{})
+
+    def test_library_details(self):
+        library_url = f"https://gent.bibliotheek.be/adres-en-openingsuren"
+        self.session.library_details(library_url)
+
 if __name__ == '__main__':
     unittest.main()

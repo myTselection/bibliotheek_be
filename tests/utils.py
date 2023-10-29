@@ -206,7 +206,8 @@ class ComponentSession(object):
         #lidmaatschap based on url in location of response received
         response = self.s.get(f"{url}",headers=header,timeout=_TIMEOUT,allow_redirects=True)
         library_details_response_header = response.headers
-        _LOGGER.debug(f"bibliotheek.be library get result status code: {response.status_code}") #response: {response.text}")
+        # _LOGGER.debug(f"bibliotheek.be library get result status code: {response.status_code}") #response: {response.text}")
+        _LOGGER.debug(f"bibliotheek.be library get result status code: {response.status_code} response: {response.text}")
         _LOGGER.debug(f"bibliotheek.be library get header: {response.headers}")
         assert response.status_code == 200
         soup = BeautifulSoup(response.text, 'html.parser')

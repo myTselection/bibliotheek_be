@@ -369,12 +369,12 @@ class ComponentLibrarySensor(Entity):
             "num_loans": self._num_loans,
             "num_total_loans": self._num_total_loans,
             "loandetails": self._loandetails,
-            "address": self._current_lbrarydetails.get('address').get('address'),
+            "address": self._current_lbrarydetails.get('address'),
             "latitude": self._current_lbrarydetails.get('lat'),
             "longitude": self._current_lbrarydetails.get('lon'),
             "entity_picture": "https://raw.githubusercontent.com/myTselection/bibliotheek_be/master/icon.png",
-            "phone": self._current_lbrarydetails.get('contacts').get('phone'),
-            "email": self._current_lbrarydetails.get('contacts').get('email'),
+            "phone": self._current_lbrarydetails.get('phone'),
+            "email": self._current_lbrarydetails.get('email'),
             "opening_hours": self._current_lbrarydetails.get('hours'),
             "closed_dates": self._current_lbrarydetails.get('closed_dates')            
         }
