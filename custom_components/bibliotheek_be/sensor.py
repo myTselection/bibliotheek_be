@@ -1,6 +1,7 @@
 import logging
 import asyncio
 from datetime import date, datetime, timedelta
+import random
 
 import homeassistant.helpers.config_validation as cv
 import voluptuous as vol
@@ -24,7 +25,7 @@ PLATFORM_SCHEMA = PLATFORM_SCHEMA.extend(
     }
 )
 
-MIN_TIME_BETWEEN_UPDATES = timedelta(hours=1)
+MIN_TIME_BETWEEN_UPDATES = timedelta(minutes=120 + random.uniform(10, 20))
 
 
 async def dry_setup(hass, config_entry, async_add_devices):
