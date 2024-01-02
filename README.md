@@ -9,6 +9,8 @@
 # Bibliotheek.be Bib Home Assistant integration
 [bibliotheek.be](https://www.bibliotheek.be/) Home Assistant custom component. It provides a clear overview of all items loaned a the different libraries by different users linked to an main account (eg children). An overview off all items per library or an overview of all items per user can be shown, see complex markdown examples below. Based on the sensors, automations can be build to get warned: eg when little time is left and certainly when extension is not possible. By using the custom services available in this integration, the loans can be extended automatically, which can be integrated in automations.
 
+**Please don't report issues with this integration to Bibliotheek.be, they will not be able to support you.**
+
 <p align="center"><img src="https://raw.githubusercontent.com/myTselection/bibliotheek_be/master/icon.png"/></p>
 
 
