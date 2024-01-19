@@ -173,7 +173,7 @@ content: >
     | Bibliotheek: | <a href="{{book.url}}" target="_blank">{{book.library}}</a> |
     | Gebruiker: | [{{book.user}} ({{book.barcode}})](https://barcodeapi.org/api/128/{{book.barcode}}) |
     | Type: | {% if book.loan_type == 'Unknown' %}Onbekend{% else %}{{book.loan_type}}{% endif %} |
-    | Afbeelding: | <img src="{{ book.image_src }}" height="100"/> |
+    | Afbeelding: | [<img src="{{ book.image_src }}" height="100"/>]({{book.url}}) |
 
     </details>
         {% endfor %}
@@ -250,7 +250,7 @@ content: >-
             | Verlenging: | {% if book.extend_loan_id %}verlengbaar{% else %}**Niet verlengbaar**{% endif %} |
             | Bibliotheek: | <a href="{{book.url}}" target="_blank">{{book.library}}</a> |
             | Type: | {% if book.loan_type == 'Unknown' %}Onbekend{% else %}{{book.loan_type}}{% endif %} |
-            | Afbeelding: | <img src="{{ book.image_src }}" height="100"/> |
+            | Afbeelding: | [<img src="{{ book.image_src }}" height="100"/>]({{book.url}}) |
           </details>
         {% endfor %}
       {% endif %}
