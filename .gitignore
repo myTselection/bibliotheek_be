@@ -129,3 +129,4 @@ dmypy.json
 .pyre/
 /*.url
 /tests/secret.py
+custom_components/bibliotheek_be/test.py
