@@ -158,7 +158,7 @@ content: >
     {% set urgent_books = all_books | selectattr("days_remaining", "eq",int(state_attr(library,'days_left'))) | list |sort(attribute="extend_loan_id", reverse=False)%}
     {% set other_books = all_books | rejectattr("days_remaining", "eq",int(state_attr(library,'days_left'))) | list |sort(attribute="days_remaining", reverse=False)%}
 
-    - {{state_attr(library,"num_loans") }} stuk{% if state_attr(library,'num_loans')|int > 1 %}s{% endif %} {%if state_attr(library,'some_not_extendable')%}in te leveren binnen{% else %}te verlengen in{% endif %} **{{states(library)}}** dag{% if states(library)|int > 1 %}en{% endif %}: {{strptime(state_attr(library,'lowest_till_date'), "%d/%m/%Y").strftime("%a %d/%m/%Y") }}
+    - {{state_attr(library,"num_loans") }} stuk{% if state_attr(library,'num_loans')|int > 1 %}s{% endif %} {%if state_attr(library,'some_not_extendable')%}**in te leveren** binnen{% else %}te verlengen in{% endif %} **{{states(library)}}** dag{% if states(library)|int > 1 %}en{% endif %}: {{strptime(state_attr(library,'lowest_till_date'), "%d/%m/%Y").strftime("%a %d/%m/%Y") }}
 
   <details>
       <summary>Toon details:</summary>
