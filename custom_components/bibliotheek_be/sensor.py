@@ -320,8 +320,8 @@ class ComponentLibrarySensor(Entity):
                     _LOGGER.debug(f"library_name_loop {library_name_loop} {self._libraryName}") 
                     self._num_total_loans += 1
                     curr_loan_type = loan_item.get('loan_type')
-                    self._loantype.setdefault(curr_loan_type, 0)
-                    self._loantype[curr_loan_type] += 1
+                    self._loantypes.setdefault(curr_loan_type, 0)
+                    self._loantypes[curr_loan_type] += 1
                     self._loandetails.append(loan_item)
                     if (self._days_left is None) or (self._days_left > loan_item.get('days_remaining')):
                         _LOGGER.debug(f"library_name_loop less days {library_name_loop} {loan_item}")
