@@ -81,7 +81,7 @@ class ComponentSession(object):
         hint = query_params.get('hint')
         _LOGGER.debug(f"bibliotheek.be url params parsed: login_location: {login_location}, oauth_token: {oauth_token}, oauth_verifier: {oauth_verifier}")
         #example login_location: https://bibliotheek.be/my-library/login/callback?oauth_token=***************&oauth_verifier=*********&uilang=nl
-        assert response.status_code == 303
+        # assert response.status_code == 303
         
         #login callback based on url in location of response received
         response = self.s.get(login_location,headers=header,timeout=_TIMEOUT,allow_redirects=False)
