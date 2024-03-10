@@ -9,6 +9,8 @@ import requests
 # from pydantic import BaseModel
 from urllib.parse import urlsplit, parse_qs
 from bs4 import BeautifulSoup
+import httpx
+
 
 import voluptuous as vol
 # from homeassistant.helpers.aiohttp_client import async_get_clientsession
@@ -32,20 +34,22 @@ def check_settings(config, hass):
     raise vol.Invalid("Missing settings to setup the sensor.")
 
 
+
 class ComponentSession(object):
     def __init__(self):
-        self.s = requests.Session()
-        self.s.headers["User-Agent"] = "Python/3"
+        self.s = httpx.Client(http2=True, max_redirects=0)
+        # self.s = requests.Session()
+        self.s.headers["User-Agent"] = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36"
         self.userdetails = dict()
 
     def login(self, username, password):
     # https://bibliotheek.be/mijn-bibliotheek/aanmelden, GET
     # example payload
     # example response: 
-    # header: location: https://mijn.bibliotheek.be/openbibid/rest/auth/authorize?hint=login&oauth_callback=https://bibliotheek.be/my-library/login/callback&oauth_token=5abee3c0f5c04beead64d8e625ead0e7&uilang=nl
+    # header: location: https://mijn.bibliotheek.be/openbibid/rest/auth/authorize?hint=login&oauth_callback=https://bibliotheek.be/my-library/login/callback&oauth_token=**************&uilang=nl
         # Get OAuth2 state / nonce
         header = {"Content-Type": "application/json"}
-        response = self.s.get("https://bibliotheek.be/mijn-bibliotheek/aanmelden",headers=header,timeout=_TIMEOUT,allow_redirects=False)
+        response = self.s.get("https://bibliotheek.be/mijn-bibliotheek/aanmelden",headers=header,timeout=_TIMEOUT)
         _LOGGER.debug(f"bibliotheek.be login post result status code: {response.status_code}")
         _LOGGER.debug(f"bibliotheek.be login header: {response.headers}")
         oauth_location = response.headers.get('location')
@@ -61,30 +65,46 @@ class ComponentSession(object):
         
         
         #authorize based on url in location of response received
-        response = self.s.get(oauth_location,headers=header,timeout=_TIMEOUT,allow_redirects=False)
+        response = self.s.get(oauth_location,headers=header,timeout=_TIMEOUT)
         _LOGGER.debug(f"bibliotheek.be auth get result status code: {response.status_code}")
         _LOGGER.debug(f"bibliotheek.be auth get header: {response.headers}")
         assert response.status_code == 200
         
+        header["Content-Type"] = "application/x-www-form-urlencoded"
+        header["Host"] = "mijn.bibliotheek.be"
+        header["Origin"] = "https://bibliotheek.be"
+        header["Referer"] = oauth_location
+        header["Accept-Language"] = "en-US,en;q=0.9,nl;q=0.8,fr;q=0.7"
         # data = f"hint={hint}&token={oauth_token}&callback=https%3A%2F%2Fbibliotheek.be%2Fmy-library%2Flogin%2Fcallback&email={username}&password={password}"
         data = {"hint": hint, "token": oauth_token, "callback":"https://bibliotheek.be/my-library/login/callback", "email": username, "password": password}
         #login
-        #example header response: https://bibliotheek.be/my-library/login/callback?oauth_token=f68491752279e1a5c0a4ee9b6a349836&oauth_verifier=d369ffff4a5c4a05&uilang=nl
-        response = self.s.post('https://mijn.bibliotheek.be/openbibid/rest/auth/login',headers=header,data=data,timeout=_TIMEOUT,allow_redirects=False)
+        #example header response: https://bibliotheek.be/my-library/login/callback?oauth_token=*******************&oauth_verifier=**********&uilang=nl
+        response = self.s.post('https://mijn.bibliotheek.be/openbibid/rest/auth/login',headers=header,data=data,timeout=_TIMEOUT)
         _LOGGER.debug(f"bibliotheek.be login get result status code: {response.status_code}")
         _LOGGER.debug(f"bibliotheek.be login get header: {response.headers}")
+        _LOGGER.debug(f"bibliotheek.be login get cookies: {response.cookies}")
+        _LOGGER.debug(f"bibliotheek.be login session cookies: {self.s.cookies}")
         login_location = response.headers.get('location')
         login_locatonurl_parsed = urlsplit(login_location)
         login_query_params = parse_qs(login_locatonurl_parsed.query)
         oauth_verifier = login_query_params.get('oauth_verifier')
         oauth_token = query_params.get('oauth_token')
-        hint = query_params.get('hint')
+        # hint = query_params.get('hint')
         _LOGGER.debug(f"bibliotheek.be url params parsed: login_location: {login_location}, oauth_token: {oauth_token}, oauth_verifier: {oauth_verifier}")
         #example login_location: https://bibliotheek.be/my-library/login/callback?oauth_token=***************&oauth_verifier=*********&uilang=nl
         assert response.status_code == 303
         
+        self.s.headers["Content-Type"] = "application/x-www-form-urlencoded"
+        self.s.headers["referer"] = "https://mijn.bibliotheek.be/"
+        self.s.headers["pragma"] = "no-cache"
+        self.s.headers["upgrade-insecure-requests"] = "1"
+        # header["X-Cache"] = "MISS ausy-cultuurconnect-web7"
+        # self.s.headers["accept"] = "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7"
+        # header["Accept-Encoding"]= "gzip, deflate, br, zstd"
         #login callback based on url in location of response received
-        response = self.s.get(login_location,headers=header,timeout=_TIMEOUT,allow_redirects=False)
+        _LOGGER.debug(f"bibliotheek.be login session header: {self.s.headers}")
+        # response = self.s.get(login_location,headers=header,timeout=_TIMEOUT)
+        response = self.s.get(login_location,timeout=_TIMEOUT)
         login_callback_location = response.headers.get('location')
         _LOGGER.debug(f"bibliotheek.be login callback get result status code: {response.status_code}")
         _LOGGER.debug(f"bibliotheek.be login callback get header: {response.headers} ") #text {response.text}")
@@ -99,7 +119,8 @@ class ComponentSession(object):
         #     login_callback_location = "https://bibliotheek.be/mijn-bibliotheek/lidmaatschappen"
         login_callback_location = "https://bibliotheek.be/mijn-bibliotheek/lidmaatschappen"
         #lidmaatschap based on url in location of response received
-        response = self.s.get(f"{login_callback_location}",headers=header,timeout=_TIMEOUT,allow_redirects=False)
+        # response = self.s.get(f"{login_callback_location}",headers=header,timeout=_TIMEOUT)
+        response = self.s.get(f"{login_callback_location}",timeout=_TIMEOUT)
         lidmaatschap_response_header = response.headers
         _LOGGER.debug(f"bibliotheek.be lidmaatschap get result status code: {response.status_code}") # response: {response.text}")
         _LOGGER.debug(f"bibliotheek.be lidmaatschap get header: {response.headers}")
@@ -204,10 +225,10 @@ class ComponentSession(object):
         _LOGGER.debug(f"library details URL {url}")
 
         #lidmaatschap based on url in location of response received
-        response = self.s.get(f"{url}",headers=header,timeout=_TIMEOUT,allow_redirects=True)
+        # response = self.s.get(f"{url}",headers=header,timeout=_TIMEOUT)
+        response = self.s.get(f"{url}",timeout=_TIMEOUT)
         library_details_response_header = response.headers
-        # _LOGGER.debug(f"bibliotheek.be library get result status code: {response.status_code}") #response: {response.text}")
-        _LOGGER.debug(f"bibliotheek.be library get result status code: {response.status_code} response: {response.text}")
+        _LOGGER.debug(f"bibliotheek.be library get result status code: {response.status_code}") #response: {response.text}")
         _LOGGER.debug(f"bibliotheek.be library get header: {response.headers}")
         assert response.status_code == 200
         soup = BeautifulSoup(response.text, 'html.parser')
@@ -284,7 +305,8 @@ class ComponentSession(object):
 
         _LOGGER.debug(f"loan details URL {url}")
         #lidmaatschap based on url in location of response received
-        response = self.s.get(f"{url}",headers=header,timeout=_TIMEOUT,allow_redirects=False)
+        # response = self.s.get(f"{url}",headers=header,timeout=_TIMEOUT)
+        response = self.s.get(f"{url}",timeout=_TIMEOUT)
         loan_details_response_header = response.headers
         _LOGGER.debug(f"bibliotheek.be lidmaatschap get result status code: {response.status_code}") # response: {response.text}")
         _LOGGER.debug(f"bibliotheek.be lidmaatschap get header: {response.headers}")
@@ -379,7 +401,8 @@ class ComponentSession(object):
     def _confirm_extension(self,url):
         header = {"Content-Type": "application/json"}
         _LOGGER.debug(f"confirm_extension extend_loan_ids url: {url}")
-        response = self.s.get(f"{url}",headers=header,timeout=_TIMEOUT,allow_redirects=False)
+        # response = self.s.get(f"{url}",headers=header,timeout=_TIMEOUT,allow_redirects=False)
+        response = self.s.get(f"{url}",timeout=_TIMEOUT)
         _LOGGER.debug(f"confirm_extension  result status code: {response.status_code} response: {response.text}")
         assert response.status_code == 200
         #retrieve loan extension form token to confirm extension
@@ -426,8 +449,8 @@ class ComponentSession(object):
 
         _LOGGER.debug(f"extend_all URL {url}")
         #lidmaatschap based on url in location of response received
-        response = self.s.get(f"{url}",headers=header,timeout=_TIMEOUT,allow_redirects=False)
-        loan_details_response_header = response.headers
+        # response = self.s.get(f"{url}",headers=header,timeout=_TIMEOUT,allow_redirects=False)
+        response = self.s.get(f"{url}",timeout=_TIMEOUT)
         _LOGGER.debug(f"bibliotheek.be lidmaatschap get result status code: {response.status_code} response: {response.text}")
         _LOGGER.debug(f"bibliotheek.be lidmaatschap get header: {response.headers}")
         assert response.status_code == 200

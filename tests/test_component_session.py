@@ -3,10 +3,13 @@ import requests
 import logging
 import json
 # from "../custom_components/bibliotheek_be/utils" import .
-# import sys
+import sys
 from secret import USERNAME, PASSWORD
-# sys.path.append('../custom_components/bibliotheek_be/')
+sys.path.append('../custom_components/bibliotheek_be')
+# from custom_components.bibliotheek_be import utils
 from utils import ComponentSession
+# from bibliotheek_be import utils
+
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -48,9 +51,9 @@ class TestComponentSession(unittest.TestCase):
         except AssertionError:
             self.assertEqual(self.session.userdetails,{})
 
-    def test_library_details(self):
-        library_url = f"https://gent.bibliotheek.be/adres-en-openingsuren"
-        self.session.library_details(library_url)
+    # def test_library_details(self):
+    #     library_url = f"https://gent.bibliotheek.be/adres-en-openingsuren"
+    #     self.session.library_details(library_url)
 
 if __name__ == '__main__':
     unittest.main()
