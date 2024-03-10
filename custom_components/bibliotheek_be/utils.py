@@ -230,7 +230,11 @@ class ComponentSession(object):
         library_details_response_header = response.headers
         _LOGGER.debug(f"bibliotheek.be library get result status code: {response.status_code}") #response: {response.text}")
         _LOGGER.debug(f"bibliotheek.be library get header: {response.headers}")
-        assert response.status_code == 200
+        
+        login_location = response.headers.get('location')
+        if login_location is not None:
+            _LOGGER.debug(f"Following redirection: {login_location}")
+            response = self.s.get(login_location,timeout=_TIMEOUT)
         soup = BeautifulSoup(response.text, 'html.parser')
         libraryArticle = soup.find('article',class_='library library--page-item')
         # libraryArticle = soup.find('div',class_='block block-system block-system-main-block')
@@ -307,6 +311,10 @@ class ComponentSession(object):
         #lidmaatschap based on url in location of response received
         # response = self.s.get(f"{url}",headers=header,timeout=_TIMEOUT)
         response = self.s.get(f"{url}",timeout=_TIMEOUT)
+        login_location = response.headers.get('location')
+        if login_location is not None:
+            _LOGGER.debug(f"Following redirection: {login_location}")
+            response = self.s.get(login_location,timeout=_TIMEOUT)
         loan_details_response_header = response.headers
         _LOGGER.debug(f"bibliotheek.be lidmaatschap get result status code: {response.status_code}") # response: {response.text}")
         _LOGGER.debug(f"bibliotheek.be lidmaatschap get header: {response.headers}")
