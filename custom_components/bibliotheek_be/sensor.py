@@ -454,7 +454,9 @@ class ComponentLibrariesWarningSensor(Entity):
                         self._days_left = loan_item.get('days_remaining')
                         self._lowest_till_date = loan_item.get('loan_till')
                         self._num_loans = 1
-                        self._library_name = f"{loan_item.get('library')}"
+                        if loan_item.get('library') and loan_item.get('library') not in self._library_name:
+                            self._some_not_extendable = False
+                            self._library_name += f"{loan_item.get('library')} "
                         if loan_item.get('extend_loan_id') is None or loan_item.get('extend_loan_id','').strip() == '':
                             self._some_not_extendable = True
                     elif self._days_left == loan_item.get('days_remaining'):
