@@ -10,6 +10,7 @@ import requests
 from urllib.parse import urlsplit, parse_qs
 from bs4 import BeautifulSoup
 import httpx
+from collections import OrderedDict
 
 
 import voluptuous as vol
@@ -213,12 +214,35 @@ class ComponentSession(object):
                 open_amounts_url = f"https://bibliotheek.be{div.find('a', href=re.compile('te-betalen')).get('href')}"
             except AttributeError:
                 open_amounts_url = ""
-
+            account_details['barcode_spell'] = self.count_repeated_numbers(account_details['barcode'])
             _LOGGER.debug(f"uitleningen {loans} , url: {loans_url}, reservatie: {reservations}, url {account_url}, account_details {account_details}")
             self.userdetails[account_details.get('id')]={'account_details': account_details , 'loans': { 'loans': loans, 'url': loans_url, 'history': loan_history_url}, 'reservations': {'reservations': reservations, 'url':reservations_url}, 'open_amounts': {'open_amounts': open_amounts, 'url':''}}
         _LOGGER.debug(f"self.userdetails {json.dumps(self.userdetails,indent=4)}")
         return self.userdetails
         
+    def count_repeated_numbers(self, input_string):
+        counts = []
+        current_char = None
+        current_count = 0
+
+        for char in input_string:
+            if char == current_char:
+                current_count += 1
+            else:
+                if current_count > 1:
+                    counts.append(str(current_count) + "x" + current_char)
+                elif current_char is not None:
+                    counts.append(current_char)
+                current_char = char
+                current_count = 1
+
+        if current_count > 1:
+            counts.append(str(current_count) + "x" + current_char)
+        else:
+            counts.append(current_char)
+
+        return counts
+    
     def library_details(self, url):
         header = {"Content-Type": "application/json"}
 
@@ -239,6 +263,7 @@ class ComponentSession(object):
         libraryArticle = soup.find('article',class_='library library--page-item')
         # libraryArticle = soup.find('div',class_='block block-system block-system-main-block')
         library_info = {}
+        library_info['url'] = url.replace('/adres-en-openingsuren','')
         if libraryArticle is None:
             _LOGGER.error(f"No library info found, {url}") 
             return library_info

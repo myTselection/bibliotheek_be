@@ -233,7 +233,7 @@ content: >-
   <details><summary><b>{{state_attr(user,'username') }}
   {{state_attr(user,'libraryName') }}:</b></summary>
     
-    - Kaart {{state_attr(user,'barcode') }}: 
+    - Kaart {{state_attr(user,'barcode') }} ({{state_attr(user,'barcode_spell')| join(', ') }}): 
         [<img src="{{state_attr(user,'barcode_url') }}" height=100></img>]({{state_attr(user,'barcode_url') }})
     
     - Gereserveerde stuks: {{state_attr(user,'num_reservations') }}

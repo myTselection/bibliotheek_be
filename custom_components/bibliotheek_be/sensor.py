@@ -137,10 +137,12 @@ class ComponentData:
                     assert loandetails is not None
                     username = userdetail.get('account_details').get('userName')
                     barcode = userdetail.get('account_details').get('barcode')
+                    barcode_spell = userdetail.get('account_details').get('barcode_spell')
                     for loan_info in loandetails.values():
                         loan_info["user"] = username
                         loan_info["userid"] = user_id
                         loan_info["barcode"] = barcode
+                        loan_info["barcode_spell"] = barcode_spell
                         libraryName = loan_info.get('library')
                         libraryurl = f"{loan_info['url'].split('/resolver')[0]}/adres-en-openingsuren"
                         if not self._librarydetails.get(libraryName):
@@ -190,6 +192,7 @@ class ComponentUserSensor(Entity):
         self._num_reservations = self._data._userdetails.get(self._userid).get('reservations').get('reservations')
         self._open_amounts = self._data._userdetails.get(self._userid).get('open_amounts').get('open_amounts')
         self._barcode = self._data._userdetails.get(self._userid).get('account_details').get('barcode')
+        self._barcode_spell = self._data._userdetails.get(self._userid).get('account_details').get('barcode_spell')
         self._username = self._data._userdetails.get(self._userid).get('account_details').get('userName')
         self._libraryName = self._data._userdetails.get(self._userid).get('account_details').get('libraryName')
         self._loandetails = self._data._loandetails.get(self._userid)
@@ -208,6 +211,7 @@ class ComponentUserSensor(Entity):
         self._num_reservations = self._data._userdetails.get(self._userid).get('reservations').get('reservations')
         self._open_amounts = self._data._userdetails.get(self._userid).get('open_amounts').get('open_amounts')
         self._barcode = self._data._userdetails.get(self._userid).get('account_details').get('barcode')
+        self._barcode_spell = self._data._userdetails.get(self._userid).get('account_details').get('barcode_spell')
         self._username = self._data._userdetails.get(self._userid).get('account_details').get('userName')
         self._libraryName = self._data._userdetails.get(self._userid).get('account_details').get('libraryName')
         self._loandetails = self._data._loandetails.get(self._userid)
@@ -243,6 +247,7 @@ class ComponentUserSensor(Entity):
             "last update": self._last_update,
             "userid": self._userid,
             "barcode": self._barcode,
+            "barcode_spell": self._barcode_spell,
             "barcode_url": f"https://barcodeapi.org/api/128/{self._barcode}",
             "num_loans": self._num_loans,
             "num_reservations": self._num_reservations,
@@ -294,7 +299,7 @@ class ComponentLibrarySensor(Entity):
         self._num_loans = 0
         self._num_total_loans = 0
         self._loantypes = loanTypes
-        self._current_lbrarydetails = self._data._librarydetails.get(libraryName)
+        self._current_librarydetails = self._data._librarydetails.get(libraryName)
             
 
     @property
@@ -372,14 +377,15 @@ class ComponentLibrarySensor(Entity):
             "num_loans": self._num_loans,
             "num_total_loans": self._num_total_loans,
             "loandetails": self._loandetails,
-            "address": self._current_lbrarydetails.get('address'),
-            "latitude": self._current_lbrarydetails.get('lat'),
-            "longitude": self._current_lbrarydetails.get('lon'),
+            "url": self._current_librarydetails.get('url'),
+            "address": self._current_librarydetails.get('address'),
+            "latitude": self._current_librarydetails.get('lat'),
+            "longitude": self._current_librarydetails.get('lon'),
             "entity_picture": "https://raw.githubusercontent.com/myTselection/bibliotheek_be/master/icon.png",
-            "phone": self._current_lbrarydetails.get('phone'),
-            "email": self._current_lbrarydetails.get('email'),
-            "opening_hours": self._current_lbrarydetails.get('hours'),
-            "closed_dates": self._current_lbrarydetails.get('closed_dates')            
+            "phone": self._current_librarydetails.get('phone'),
+            "email": self._current_librarydetails.get('email'),
+            "opening_hours": self._current_librarydetails.get('hours'),
+            "closed_dates": self._current_librarydetails.get('closed_dates')            
         }
         attributes.update(self._loantypes)
         return attributes
