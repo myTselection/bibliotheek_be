@@ -192,6 +192,7 @@ content: >
     - <details><summary>Info Bib {{state_attr(library,'libraryName') }}</summary>
 
 
+        - Url: {{state_attr(library,'url')}}
         - Adres: {{state_attr(library,'address')}}
         - GPS: [{{state_attr(library,'latitude')}},{{state_attr(library,'longitude')}}](http://maps.google.com/maps?daddr={{state_attr(library,'latitude')}},{{state_attr(library,'longitude')}}&ll=)
         - Tel: {{state_attr(library,'phone')}}
