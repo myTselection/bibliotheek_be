@@ -165,7 +165,7 @@ content: >
       <summary>Toon details:</summary>
         {% for book in all_books  %}
   <details>
-      <summary>{% if book.extend_loan_id %}{{ strptime(book.loan_till, "%d/%m/%Y").strftime("%a %d/%m/%Y") }}{% else %}<b>{{ strptime(book.loan_till, "%d/%m/%Y").strftime("%a %d/%m/%Y") }}</b>{% endif %}: {{ book.title }} ~ {{ book.author }}</summary> 
+      <summary>{% if book.extend_loan_id %}{{ strptime(book.loan_till, "%d/%m/%Y").strftime("%a %d/%m/%Y") }}{% else %}<b>{{ strptime(book.loan_till, "%d/%m/%Y").strftime("%a %d/%m/%Y") }}</b>{% endif %}: {{ book.title }}{% if book.author != "-"%} ~ {{ book.author }}{% endif %}</summary> 
 
     |  |  |
     | :--- | :--- |
@@ -244,7 +244,7 @@ content: >-
       {% set all_books = state_attr(user,'loandetails').values()  |sort(attribute="days_remaining", reverse=False)%}
     - In totaal {{state_attr(user,'num_loans') }} uitgeleend{% if all_books %}
         {% for book in all_books %}
-        - <details><summary>{% if book.extend_loan_id %}{{ strptime(book.loan_till, "%d/%m/%Y").strftime("%a %d/%m/%Y") }}{% else %}<b>{{ strptime(book.loan_till, "%d/%m/%Y").strftime("%a %d/%m/%Y") }}</b>{% endif %}: {{ book.title }} ~ {{ book.author }}</summary> 
+        - <details><summary>{% if book.extend_loan_id %}{{ strptime(book.loan_till, "%d/%m/%Y").strftime("%a %d/%m/%Y") }}{% else %}<b>{{ strptime(book.loan_till, "%d/%m/%Y").strftime("%a %d/%m/%Y") }}</b>{% endif %}: {{ book.title }}{% if book.author != "-"%} ~ {{ book.author }}{% endif %}</summary> 
     
             |  |  |
             | :--- | :--- |
@@ -276,7 +276,7 @@ content: >-
   <details><summary><b>{{state_attr(user,'username') }}
   {{state_attr(user,'libraryName') }}:</b></summary>
     
-    - Kaart {{state_attr(user,'barcode') }}:
+    - Kaart {{state_attr(user,'barcode') }} ({{state_attr(user,'barcode_spell')| join(', ') }}):
     [<img src="{{state_attr(user,'barcode_url') }}" height=100></img>]({{state_attr(user,'barcode_url') }})
     
     - Gereserveerde stuks: {{state_attr(user,'num_reservations') }}
