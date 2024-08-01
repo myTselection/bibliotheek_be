@@ -1,0 +1,107 @@
+{
+    "config": {
+        "step": {
+            "user": {
+                "description": "configurar o sensor Bibliotheek.be, os utilizador e Palavra-Passe são obrigatórios.",
+                "data": {
+                    "username": "Utilizador",
+                    "password": "Palavra-Passe"
+                }
+            },
+            "edit": {
+                "description": "configurar o sensor Bibliotheek.be, os utilizador e Palavra-Passe são obrigatórios.",
+                "data": {
+                    "username": "Utilizador",
+                    "password": "Palavra-Passe"
+                }
+            }
+
+        },
+        "error": {
+            "missing username": "Utilizador invalido",
+            "missing password": "Palavra-Passe invalida",
+            "missing data options handler": "Falha nas opcções",
+            "no_valid_settings": "Sem configurações.... inserir utilizador e palavra passe na configuração."
+        }
+    },
+    "options": {
+        "step": {
+            "edit": {
+                "description": "configurar o sensor Bibliotheek.be, os utilizador e Palavra-Passe são obrigatórios.",
+                "data": {
+                    "username": "Utilizador",
+                    "password": "Palavra-Passe"
+                }
+            }
+        },
+        "error": {
+            "missing username": "Please provide a valid username",
+            "missing password": "Please provide a valid password",
+            "missing data options handler": "Option handler failed",
+            "no_valid_settings": "No valid settings, provide username, password in ha config."
+        }
+    },
+    "services": {
+        "extend_loan": {
+            "name": "extend_loan",
+            "description": "Solicite uma extensão de um empréstimo para um item específico se o days_remaining for menor ou igual a max_days_remaining. Observe que alguns empréstimos que não possuem extende_loan_id não podem ser estendidos.",
+            "fields": {
+                "extend_loan_id": {
+                    "name": "extend_loan_id",
+                    "description": "O ID da extensão da biblioteca"
+                },
+                "max_days_remaining": {
+                    "name": "max_days_remaining",
+                    "description": "Prolongue o empréstimo apenas se os dias restantes estiverem abaixo deste máximo"
+                }
+            }
+
+        }, 
+        "extend_loans_library": {
+            "name": "extend_loans_library",
+            "description": "Solicite uma extensão de todos os empréstimos para uma biblioteca para a qual days_remaining seja menor ou igual a max_days_remaining. Observe que alguns empréstimos que não possuem extende_loan_id não podem ser estendidos.",
+            "fields": {
+                "library_name": {
+                    "name": "library_name",
+                    "description": "Nome da biblioteca"
+                },
+                "max_days_remaining": {
+                    "name": "max_days_remaining",
+                    "description": "Prolongue o empréstimo apenas se os dias restantes estiverem abaixo deste máximo"
+                }
+            }
+
+        }, 
+        "extend_loans_user": {
+            "name": "extend_loans_user",
+            "description": "Solicite uma extensão de todos os empréstimos para um usuário para o qual days_remaining é menor ou igual a max_days_remaining. Observe que alguns empréstimos que não possuem extende_loan_id não podem ser estendidos.",
+            "fields": {
+                "barcode": {
+                    "name": "barcode",
+                    "description": "Código de barras do utilizador"
+                },
+                "max_days_remaining": {
+                    "name": "max_days_remaining",
+                    "description": "Prolongue o empréstimo apenas se os dias restantes estiverem abaixo deste máximo"
+                }
+            }
+
+        }, 
+        "extend_all_loans": {
+            "name": "extend_all_loans",
+            "description": "Solicite uma extensão de todos os empréstimos para todos os usuários para os quais days_remaining seja menor ou igual a max_days_remaining. Observe que alguns empréstimos que não possuem extende_loan_id não podem ser estendidos.",
+            "fields": {
+                "max_days_remaining": {
+                    "name": "max_days_remaining",
+                    "description": "Prolongue o empréstimo apenas se os dias restantes estiverem abaixo deste máximo"
+                }
+            }
+
+        }, 
+        "update": {
+            "name": "Atualizar",
+            "description": "Forçar uma atualização dos dados do sensor (as atualizações padrão são limitadas por hora)."
+        }
+
+    }
+}
