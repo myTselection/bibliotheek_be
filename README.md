@@ -229,7 +229,7 @@ content: >-
 
   {% set user = user_device.entity_id %}
 
-  {% if state_attr(user,'num_loans') > 0 %}
+  {% if state_attr(user,'num_loans') or 0 > 0 %}
 
   <details><summary><b>{{state_attr(user,'username') }}
   {{state_attr(user,'libraryName') }}:</b></summary>
