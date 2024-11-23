@@ -278,18 +278,27 @@ class ComponentSession(object):
             hours[day] = times
         library_info['hours'] = hours
 
-        gps = libraryArticle.find('div',class_='library__pane--address-address--gps').text.replace('\n', ' ').replace('\u00b0','').replace('Gps','').strip()
-        gps = gps.strip().split('NB')
-        lat = gps[0]
-        lon = gps[1].strip().split('OL')[0]
-        library_info['lat'] = lat
-        library_info['lon'] = lon
-        _LOGGER.debug(f"gps {gps} lat {lat} lon {lon}")
+        gps_element = libraryArticle.find('div',class_='library__pane--address-address--gps')
+        if gps_element:
+            gps_element = gps_element.text.replace('\n', ' ').replace('\u00b0','').replace('Gps','').strip()
+            gps_element = gps_element.strip().split('NB')
+            lat = gps_element[0]
+            lon = gps_element[1].strip().split('OL')[0]
+            library_info['lat'] = lat
+            library_info['lon'] = lon
+            _LOGGER.debug(f"gps {gps_element} lat {lat} lon {lon}")
 
-        library_info['address'] = libraryArticle.find('div',class_='library__pane--address--address').text.replace('\n', ' ').replace('Adres','').replace('Toon op kaart','').strip().replace('         ',',')
+        address_element = libraryArticle.find('div',class_='library__pane--address--address')
+        if address_element:
+            library_info['address'] = address_element.text.replace('\n', ' ').replace('Adres','').replace('Toon op kaart','').strip().replace('         ',',')
 
-        library_info['phone'] = libraryArticle.find('a',class_='tel').text.strip()
-        library_info['email'] = libraryArticle.find('span',class_='spamspan').text.strip().replace(' [at] ', '@')
+        phone_element = libraryArticle.find('a',class_='tel')
+        if phone_element:
+            library_info['phone'] = libraryArticle.find('a',class_='tel').text.strip()
+        
+        email_element = libraryArticle.find('span',class_='spamspan')
+        if email_element:
+            library_info['email'] = libraryArticle.find('span',class_='spamspan').text.strip().replace(' [at] ', '@')
 
         closed_dates = []
         for dl in libraryArticle.find_all('dl',class_='library__date-closed'):
