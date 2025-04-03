@@ -7,7 +7,13 @@
 [![GitHub commit activity](https://img.shields.io/github/commit-activity/m/myTselection/bibliotheek_be.svg)](https://github.com/myTselection/bibliotheek_be/graphs/commit-activity)
 
 # Bibliotheek.be Bib Home Assistant integration
-[bibliotheek.be](https://www.bibliotheek.be/) Home Assistant custom component. It provides a clear overview of all items loaned a the different libraries by different users linked to an main account (eg children). An overview off all items per library or an overview of all items per user can be shown, see complex markdown examples below. Based on the sensors, automations can be build to get warned: eg when little time is left and certainly when extension is not possible. By using the custom services available in this integration, the loans can be extended automatically, which can be integrated in automations.
+[bibliotheek.be](https://www.bibliotheek.be/) Home Assistant custom component. It provides a clear overview of all items lended. Supproting accounts with different lendings at different libraries. Also supporting different users linked to a main account (eg parent and children). 
+
+An overview of all items per library or an overview of all items per user can be shown, see complex markdown examples below. 
+
+Based on the sensors, automations can be build to get warned: eg when little time is left to return an item and considering item extension in the library is not more possible. 
+
+By using the custom services available in this integration, the lendings can be extended automatically, which can be integrated in automations. For example: auto extend lending for all items which are to be returned within 5 days. Full info below.
 
 | :warning: Please don't report issues with this integration to Bibliotheek.be, they will not be able to support you. |
 | --------------------------------------------------------------------------------------------------------------------|
