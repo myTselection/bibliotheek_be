@@ -111,11 +111,11 @@ class ComponentData:
         self._username = username
         self._password = password
         self._client = client
-        self._session = ComponentSession()
+        self._hass = hass
+        self._session = ComponentSession(self._hass)
         self._userdetails = None
         self._loandetails = dict()
         self._librarydetails = dict()
-        self._hass = hass
         self._lastupdate = None
         self._oauth_token = None
         
@@ -123,7 +123,7 @@ class ComponentData:
     async def _force_update(self):
         _LOGGER.info("Fetching update stuff for " + NAME)
         if not(self._session):
-            self._session = ComponentSession()
+            self._session = ComponentSession(self._hass)
 
         if self._session:
             self._userdetails = await self._hass.async_add_executor_job(lambda: self._session.login(self._username, self._password))

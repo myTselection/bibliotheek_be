@@ -102,7 +102,7 @@ def register_services(hass, config_entry):
         config = config_entry.data
         username = config.get("username")
         password = config.get("password")
-        session = ComponentSession()
+        session = ComponentSession(hass)
         userdetails = await hass.async_add_executor_job(lambda: session.login(username, password))
         assert userdetails is not None
         _LOGGER.debug(f"{NAME} handle_extend_loan login completed")
@@ -145,7 +145,7 @@ def register_services(hass, config_entry):
         config = config_entry.data
         username = config.get("username")
         password = config.get("password")
-        session = ComponentSession()
+        session = ComponentSession(hass)
         userdetails = await hass.async_add_executor_job(lambda: session.login(username, password))
         assert userdetails is not None
         _LOGGER.debug(f"{NAME} handle_extend_loan login completed")
@@ -183,7 +183,7 @@ def register_services(hass, config_entry):
         username = config.get("username")
         password = config.get("password")
         """Handle the service call."""
-        session = ComponentSession()
+        session = ComponentSession(hass)
         userdetails = await hass.async_add_executor_job(lambda: session.login(username, password))
         assert userdetails is not None
         _LOGGER.debug(f"{NAME} handle_extend_loan login completed")
@@ -208,7 +208,7 @@ def register_services(hass, config_entry):
         username = config.get("username")
         password = config.get("password")
         """Handle the service call."""
-        session = ComponentSession()
+        session = ComponentSession(hass)
         userdetails = await hass.async_add_executor_job(lambda: session.login(username, password))
         assert userdetails is not None
         _LOGGER.debug(f"{NAME} handle_extend_loan login completed")

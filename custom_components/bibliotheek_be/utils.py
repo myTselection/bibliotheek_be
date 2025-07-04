@@ -9,8 +9,16 @@ import requests
 # from pydantic import BaseModel
 from urllib.parse import urlsplit, parse_qs
 from bs4 import BeautifulSoup
-import httpx
 from collections import OrderedDict
+# import httpx
+from homeassistant.helpers.httpx_client import get_async_client
+from homeassistant.core import (
+    Event,
+    EventStateChangedData,
+    HomeAssistant,
+    ServiceCall,
+    callback,
+)
 
 
 import voluptuous as vol
@@ -37,20 +45,21 @@ def check_settings(config, hass):
 
 
 class ComponentSession(object):
-    def __init__(self):
-        self.s = httpx.Client(http2=True, max_redirects=0)
+    def __init__(self, hass: HomeAssistant):
+        # self.s = httpx.Client(http2=True, max_redirects=0)
+        self.s = get_async_client(hass)
         # self.s = requests.Session()
         self.s.headers["User-Agent"] = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36"
         self.userdetails = dict()
 
-    def login(self, username, password):
+    async def login(self, username, password):
     # https://bibliotheek.be/mijn-bibliotheek/aanmelden, GET
     # example payload
     # example response: 
     # header: location: https://mijn.bibliotheek.be/openbibid/rest/auth/authorize?hint=login&oauth_callback=https://bibliotheek.be/my-library/login/callback&oauth_token=**************&uilang=nl
         # Get OAuth2 state / nonce
         header = {"Content-Type": "application/json"}
-        response = self.s.get("https://bibliotheek.be/mijn-bibliotheek/aanmelden",headers=header,timeout=_TIMEOUT)
+        response = await self.s.get("https://bibliotheek.be/mijn-bibliotheek/aanmelden",headers=header,timeout=_TIMEOUT)
         _LOGGER.debug(f"bibliotheek.be login post result status code: {response.status_code}")
         _LOGGER.debug(f"bibliotheek.be login header: {response.headers}")
         oauth_location = response.headers.get('location')
@@ -66,7 +75,7 @@ class ComponentSession(object):
         
         
         #authorize based on url in location of response received
-        response = self.s.get(oauth_location,headers=header,timeout=_TIMEOUT)
+        response = await self.s.get(oauth_location,headers=header,timeout=_TIMEOUT)
         _LOGGER.debug(f"bibliotheek.be auth get result status code: {response.status_code}")
         _LOGGER.debug(f"bibliotheek.be auth get header: {response.headers}")
         assert response.status_code == 200
@@ -80,7 +89,7 @@ class ComponentSession(object):
         data = {"hint": hint, "token": oauth_token, "callback":"https://bibliotheek.be/my-library/login/callback", "email": username, "password": password}
         #login
         #example header response: https://bibliotheek.be/my-library/login/callback?oauth_token=*******************&oauth_verifier=**********&uilang=nl
-        response = self.s.post('https://mijn.bibliotheek.be/openbibid/rest/auth/login',headers=header,data=data,timeout=_TIMEOUT)
+        response = await self.s.post('https://mijn.bibliotheek.be/openbibid/rest/auth/login',headers=header,data=data,timeout=_TIMEOUT)
         _LOGGER.debug(f"bibliotheek.be login get result status code: {response.status_code}")
         _LOGGER.debug(f"bibliotheek.be login get header: {response.headers}")
         _LOGGER.debug(f"bibliotheek.be login get cookies: {response.cookies}")
@@ -105,7 +114,7 @@ class ComponentSession(object):
             #login callback based on url in location of response received
             _LOGGER.debug(f"bibliotheek.be login session header: {self.s.headers}")
             # response = self.s.get(login_location,headers=header,timeout=_TIMEOUT)
-            response = self.s.get(login_location,timeout=_TIMEOUT)
+            response = await self.s.get(login_location,timeout=_TIMEOUT)
             login_callback_location = response.headers.get('location')
             _LOGGER.debug(f"bibliotheek.be login callback get result status code: {response.status_code}")
             _LOGGER.debug(f"bibliotheek.be login callback get header: {response.headers} ") #text {response.text}")
@@ -121,7 +130,7 @@ class ComponentSession(object):
         login_callback_location = "https://bibliotheek.be/mijn-bibliotheek/lidmaatschappen"
         #lidmaatschap based on url in location of response received
         # response = self.s.get(f"{login_callback_location}",headers=header,timeout=_TIMEOUT)
-        response = self.s.get(f"{login_callback_location}",timeout=_TIMEOUT)
+        response = await self.s.get(f"{login_callback_location}",timeout=_TIMEOUT)
         lidmaatschap_response_header = response.headers
         _LOGGER.debug(f"bibliotheek.be lidmaatschap get result status code: {response.status_code}") # response: {response.text}")
         _LOGGER.debug(f"bibliotheek.be lidmaatschap get header: {response.headers}")
@@ -243,14 +252,14 @@ class ComponentSession(object):
 
         return counts
     
-    def library_details(self, url):
+    async def library_details(self, url):
         header = {"Content-Type": "application/json"}
 
         _LOGGER.debug(f"library details URL {url}")
 
         #lidmaatschap based on url in location of response received
         # response = self.s.get(f"{url}",headers=header,timeout=_TIMEOUT)
-        response = self.s.get(f"{url}",timeout=_TIMEOUT)
+        response = await self.s.get(f"{url}",timeout=_TIMEOUT)
         library_details_response_header = response.headers
         _LOGGER.debug(f"bibliotheek.be library get result status code: {response.status_code}") #response: {response.text}")
         _LOGGER.debug(f"bibliotheek.be library get header: {response.headers}")
@@ -258,7 +267,7 @@ class ComponentSession(object):
         login_location = response.headers.get('location')
         if login_location is not None:
             _LOGGER.debug(f"Following redirection: {login_location}")
-            response = self.s.get(login_location,timeout=_TIMEOUT)
+            response = await self.s.get(login_location,timeout=_TIMEOUT)
         soup = BeautifulSoup(response.text, 'html.parser')
         libraryArticle = soup.find('article',class_='library library--page-item')
         # libraryArticle = soup.find('div',class_='block block-system block-system-main-block')
@@ -337,18 +346,18 @@ class ComponentSession(object):
             # "library": "Bibliotheek ***"
         # }
     # }
-    def loan_details(self, url):
+    async def loan_details(self, url):
         loandetails = dict()
         header = {"Content-Type": "application/json"}
 
         _LOGGER.debug(f"loan details URL {url}")
         #lidmaatschap based on url in location of response received
         # response = self.s.get(f"{url}",headers=header,timeout=_TIMEOUT)
-        response = self.s.get(f"{url}",timeout=_TIMEOUT)
+        response = await self.s.get(f"{url}",timeout=_TIMEOUT)
         login_location = response.headers.get('location')
         if login_location is not None:
             _LOGGER.debug(f"Following redirection: {login_location}")
-            response = self.s.get(login_location,timeout=_TIMEOUT)
+            response = await self.s.get(login_location,timeout=_TIMEOUT)
         loan_details_response_header = response.headers
         _LOGGER.debug(f"bibliotheek.be lidmaatschap get result status code: {response.status_code}") # response: {response.text}")
         _LOGGER.debug(f"bibliotheek.be lidmaatschap get header: {response.headers}")
@@ -422,7 +431,7 @@ class ComponentSession(object):
     #example extension url:
     # https://bibliotheek.be/mijn-bibliotheek/lidmaatschappen/1234567/uitleningen/verlengen?loan-ids=14870745
     
-    def extend_single_item(self, url, extend_loan_id, execute):
+    async def extend_single_item(self, url, extend_loan_id, execute):
         header = {"Content-Type": "application/json"}
 
         _LOGGER.debug(f"extend_single_item URL {url}")        
@@ -435,16 +444,16 @@ class ComponentSession(object):
         
         if execute:
             _LOGGER.debug(f"extend_loan_ids url: {extend_loan_ids}")
-            self._confirm_extension(extend_loan_ids)
+            await self._confirm_extension(extend_loan_ids)
                 
         _LOGGER.info(f"extend_single_item done for {num_id_found} items") 
         return num_id_found
         
-    def _confirm_extension(self,url):
+    async def _confirm_extension(self,url):
         header = {"Content-Type": "application/json"}
         _LOGGER.debug(f"confirm_extension extend_loan_ids url: {url}")
         # response = self.s.get(f"{url}",headers=header,timeout=_TIMEOUT,allow_redirects=False)
-        response = self.s.get(f"{url}",timeout=_TIMEOUT)
+        response = await self.s.get(f"{url}",timeout=_TIMEOUT)
         _LOGGER.debug(f"confirm_extension  result status code: {response.status_code} response: {response.text}")
         assert response.status_code == 200
         #retrieve loan extension form token to confirm extension
@@ -456,12 +465,12 @@ class ComponentSession(object):
             data = {input_field.get('name'): input_field.get('value') for input_field in input_fields}
             header = {"Content-Type": "application/x-www-form-urlencoded"}
             _LOGGER.debug(f"confirm_extensionextend_loan_ids confirm data: {data} url: {url}")
-            response = self.s.post(f"{url}",headers=header,data=data,timeout=_TIMEOUT)
+            response = await self.s.post(f"{url}",headers=header,data=data,timeout=_TIMEOUT)
             _LOGGER.debug(f"confirm_extension confirmation result status code: {response.status_code} response: {response.text}")
             # assert response.status_code == 200
     
 
-    def extend_multiple_ids(self, url, extend_loan_ids, execute):
+    async def extend_multiple_ids(self, url, extend_loan_ids, execute):
         loandetails = dict()
         header = {"Content-Type": "application/json"}
 
@@ -481,18 +490,18 @@ class ComponentSession(object):
         
         if num_id_found >0 and execute:
             _LOGGER.debug(f"extend_loan_ids url: {url}")
-            self._confirm_extension(url)
+            await self._confirm_extension(url)
         _LOGGER.info(f"extend_multiple_ids done for {num_id_found} items") 
         return num_id_found
 
-    def extend_all(self, url, max_days_remaining, execute):
+    async def extend_all(self, url, max_days_remaining, execute):
         loandetails = dict()
         header = {"Content-Type": "application/json"}
 
         _LOGGER.debug(f"extend_all URL {url}")
         #lidmaatschap based on url in location of response received
         # response = self.s.get(f"{url}",headers=header,timeout=_TIMEOUT,allow_redirects=False)
-        response = self.s.get(f"{url}",timeout=_TIMEOUT)
+        response = await self.s.get(f"{url}",timeout=_TIMEOUT)
         _LOGGER.debug(f"bibliotheek.be lidmaatschap get result status code: {response.status_code} response: {response.text}")
         _LOGGER.debug(f"bibliotheek.be lidmaatschap get header: {response.headers}")
         assert response.status_code == 200
@@ -533,6 +542,6 @@ class ComponentSession(object):
         
         if execute and num_id_found > 0:
             _LOGGER.debug(f"extend_loan_ids url: {extend_loan_ids}")
-            self._confirm_extension(extend_loan_ids)
+            await self._confirm_extension(extend_loan_ids)
         _LOGGER.info(f"extend_all done for {num_id_found} items") 
         return num_id_found
