@@ -43,6 +43,21 @@ Sensors `Bibliotheek.be` should become available with the number of items lent o
 	| `open_amounts`  | Open amount (€) due to this library (eg related to fines) |
 	| `username`  | First and lastname of the user |
 	| `libraryName`  | Name of the library or the group of libraries |
+	| `isExpired`  | Boolean indication if the user account is expired at this library |
+	| `expirationDate`  | Date of experiation of the user account at this library |
+	| `isBlocked`  | Boolean indication if the user account is blocked at this library |
+	| `hasError`  | Boolean indication if the user account has an error at this library |
+	| `entity_picture`  | General picture for library sensor, eg used by HA when showing the sensor on a map |
+	| `name`  | Name of the user at this library |
+	| `address`  | Address of the user |
+	| `id`  | Unique technical id of the user at this library |
+	| `libaryUrl`  | Base url of this libary |
+	| `mail`  | Account email address of the user at this library |
+	| `userMail`  | User email address of the user at this library |
+	| `mailNotInSync`  | Boolean indication if the mail is not in sync at this library |
+	| `pendingValidationDate`  | Date of pending validation of the user account at this library |
+	| `supportsOnlineRenewal`  | Boolean indication if the user account supports online renewal at this library |
+	| `wasRecentlyAdded`  | Boolean indication if the user account was recently added at this library |
 	| `loandetails`  | Json containing all the loans of this user at this library. The structure of json is:<br/>  `{ 'item name' :` <br/>&nbsp;` { tile: 'title of the item', ` <br/>&nbsp;&nbsp;&nbsp;&nbsp;`author: 'author of the item', ` <br/>&nbsp;&nbsp;&nbsp;&nbsp;`loan_type: 'type of the item (eg book, dvd, ...) , ` <br/>&nbsp;&nbsp;&nbsp;&nbsp;`url: 'url of the specific item', ` <br/>&nbsp;&nbsp;&nbsp;&nbsp;`image_src: 'url to image of the item', ` <br/>&nbsp;&nbsp;&nbsp;&nbsp;`days_remaining: 'number of days by which the item has to be returned or extended', ` <br/>&nbsp;&nbsp;&nbsp;&nbsp;`loan_from: 'Start date of the loan', ` <br/>&nbsp;&nbsp;&nbsp;&nbsp;`loan_till: 'Date by which the item needs to be returned', ` <br/>&nbsp;&nbsp;&nbsp;&nbsp;`extend_loan_id: 'the id used to extend the item, if no id is available, the item can not be extended',` <br/>&nbsp;&nbsp;&nbsp;&nbsp;`library: 'name of the actual library location (city) where the item is belonging too',` <br/>&nbsp;&nbsp;&nbsp;&nbsp;`user: 'the user that lended the item',` <br/>&nbsp;&nbsp;&nbsp;&nbsp;`barcode: 'the barcode of the card that was used to lend the item' }`  |
 	</details>
 - <details><summary><code>sensor.bibliotheek_be_bib_[library]</code> will be created for each library</summary>
