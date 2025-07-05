@@ -144,9 +144,9 @@ class ComponentData:
                         loan_info["barcode"] = barcode
                         loan_info["barcode_spell"] = barcode_spell
                         libraryName = loan_info.get('library')
-                        libraryurl = f"{loan_info['url'].split('/resolver')[0]}/adres-en-openingsuren"
+                        libraryurl = f"{userdetail.get('account_details').get('library')}/adres-en-openingsuren"
                         if not self._librarydetails.get(libraryName):
-                            _LOGGER.info(f"Calling library details {userdetail.get('account_details').get('userName')}")
+                            _LOGGER.info(f"Calling library details {libraryName}")
                             librarydetails = await self._hass.async_add_executor_job(lambda: self._session.library_details(libraryurl))
                             assert librarydetails is not None
                             self._librarydetails[libraryName] = librarydetails
@@ -189,12 +189,29 @@ class ComponentUserSensor(Entity):
         
         # _LOGGER.info(f"init sensor userid {userid} _userdetails {self._data._userdetails}")
         self._num_loans = self._data._userdetails.get(self._userid).get('loans').get('loans')
+        self._loans_url = self._data._userdetails.get(self._userid).get('loans').get('url')
+        self._loans_history = self._data._userdetails.get(self._userid).get('loans').get('history')
         self._num_reservations = self._data._userdetails.get(self._userid).get('reservations').get('reservations')
+        self._reservations_url = self._data._userdetails.get(self._userid).get('reservations').get('url')
         self._open_amounts = self._data._userdetails.get(self._userid).get('open_amounts').get('open_amounts')
         self._barcode = self._data._userdetails.get(self._userid).get('account_details').get('barcode')
         self._barcode_spell = self._data._userdetails.get(self._userid).get('account_details').get('barcode_spell')
         self._username = self._data._userdetails.get(self._userid).get('account_details').get('userName')
         self._libraryName = self._data._userdetails.get(self._userid).get('account_details').get('libraryName')
+        self._expirationDate = self._data._userdetails.get(self._userid).get('account_details').get('expirationDate')
+        self._hasError = self._data._userdetails.get(self._userid).get('account_details').get('hasError')
+        self._isBlocked = self._data._userdetails.get(self._userid).get('account_details').get('isBlocked')
+        self._isExpired = self._data._userdetails.get(self._userid).get('account_details').get('isExpired')
+        self._name = self._data._userdetails.get(self._userid).get('account_details').get('name')
+        self._address = self._data._userdetails.get(self._userid).get('account_details').get('address')
+        self._id = self._data._userdetails.get(self._userid).get('account_details').get('id')
+        self._libraryUrl = self._data._userdetails.get(self._userid).get('account_details').get('library')
+        self._mail = self._data._userdetails.get(self._userid).get('account_details').get('mail')
+        self._userMail = self._data._userdetails.get(self._userid).get('account_details').get('userMail')
+        self._mailNotInSync = self._data._userdetails.get(self._userid).get('account_details').get('mailNotInSync')
+        self._pendingValidationDate = self._data._userdetails.get(self._userid).get('account_details').get('pendingValidationDate')
+        self._supportsOnlineRenewal = self._data._userdetails.get(self._userid).get('account_details').get('supportsOnlineRenewal')
+        self._wasRecentlyAdded = self._data._userdetails.get(self._userid).get('account_details').get('wasRecentlyAdded')
         self._loandetails = self._data._loandetails.get(self._userid)
 
     @property
@@ -208,12 +225,29 @@ class ComponentUserSensor(Entity):
         self._loandetails = None
         
         self._num_loans = self._data._userdetails.get(self._userid).get('loans').get('loans')
+        self._loans_url = self._data._userdetails.get(self._userid).get('loans').get('url')
+        self._loans_history = self._data._userdetails.get(self._userid).get('loans').get('history')
         self._num_reservations = self._data._userdetails.get(self._userid).get('reservations').get('reservations')
+        self._reservations_url = self._data._userdetails.get(self._userid).get('reservations').get('url')
         self._open_amounts = self._data._userdetails.get(self._userid).get('open_amounts').get('open_amounts')
         self._barcode = self._data._userdetails.get(self._userid).get('account_details').get('barcode')
         self._barcode_spell = self._data._userdetails.get(self._userid).get('account_details').get('barcode_spell')
         self._username = self._data._userdetails.get(self._userid).get('account_details').get('userName')
         self._libraryName = self._data._userdetails.get(self._userid).get('account_details').get('libraryName')
+        self._expirationDate = self._data._userdetails.get(self._userid).get('account_details').get('expirationDate')
+        self._hasError = self._data._userdetails.get(self._userid).get('account_details').get('hasError')
+        self._isBlocked = self._data._userdetails.get(self._userid).get('account_details').get('isBlocked')
+        self._isExpired = self._data._userdetails.get(self._userid).get('account_details').get('isExpired')
+        self._name = self._data._userdetails.get(self._userid).get('account_details').get('name')
+        self._address = self._data._userdetails.get(self._userid).get('account_details').get('address')
+        self._id = self._data._userdetails.get(self._userid).get('account_details').get('id')
+        self._libraryUrl = self._data._userdetails.get(self._userid).get('account_details').get('library')
+        self._mail = self._data._userdetails.get(self._userid).get('account_details').get('mail')
+        self._userMail = self._data._userdetails.get(self._userid).get('account_details').get('userMail')
+        self._mailNotInSync = self._data._userdetails.get(self._userid).get('account_details').get('mailNotInSync')
+        self._pendingValidationDate = self._data._userdetails.get(self._userid).get('account_details').get('pendingValidationDate')
+        self._supportsOnlineRenewal = self._data._userdetails.get(self._userid).get('account_details').get('supportsOnlineRenewal')
+        self._wasRecentlyAdded = self._data._userdetails.get(self._userid).get('account_details').get('wasRecentlyAdded')
         self._loandetails = self._data._loandetails.get(self._userid)
         
         
@@ -250,14 +284,31 @@ class ComponentUserSensor(Entity):
             "barcode_spell": self._barcode_spell,
             "barcode_url": f"https://barcodeapi.org/api/128/{self._barcode}",
             "num_loans": self._num_loans,
+            "loans_url": self._loans_url,
+            "loans_history": self._loans_history,
             "num_reservations": self._num_reservations,
+            "reservations_url": self._reservations_url,
             "open_amounts": self._open_amounts,
             "username": self._username,
             "libraryName": self._libraryName,
+            "isExpired": self._isExpired,
+            "expirationDate": self._expirationDate,
+            "isBlocked": self._isBlocked,
+            "hasError": self._hasError,
             "entity_picture": "https://raw.githubusercontent.com/myTselection/bibliotheek_be/master/icon.png",
+            "name": self._name,
+            "address": self._address,
+            "id": self._id, 
+            "libaryUrl": self._libraryUrl, 
+            "mail":self._mail, 
+            "userMail": self._userMail,
+            "mailNotInSync": self._mailNotInSync,
+            "pendingValidationDate": self._pendingValidationDate,
+            "supportsOnlineRenewal": self._supportsOnlineRenewal,
+            "wasRecentlyAdded": self._wasRecentlyAdded,
             "loandetails": self._loandetails
         }
-
+    
     @property
     def device_info(self) -> DeviceInfo:
         """Return the device info."""

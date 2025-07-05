@@ -60,55 +60,56 @@ class ComponentSession(object):
         oauth_token = query_params.get('oauth_token')
         hint = query_params.get('hint')
         _LOGGER.debug(f"bibliotheek.be url params parsed: oauth_callback_url: {oauth_callback_url}, oauth_token: {oauth_token}, hint: {hint}")
+        require_auth = True
         if (response.status_code != 302):
-            # Return if already authenticated
-            return
+            # already authenticated
+            require_auth = False
         
-        
-        #authorize based on url in location of response received
-        response = self.s.get(oauth_location,headers=header,timeout=_TIMEOUT)
-        _LOGGER.debug(f"bibliotheek.be auth get result status code: {response.status_code}")
-        _LOGGER.debug(f"bibliotheek.be auth get header: {response.headers}")
-        assert response.status_code == 200
-        
-        header["Content-Type"] = "application/x-www-form-urlencoded"
-        header["Host"] = "mijn.bibliotheek.be"
-        header["Origin"] = "https://bibliotheek.be"
-        header["Referer"] = oauth_location
-        header["Accept-Language"] = "en-US,en;q=0.9,nl;q=0.8,fr;q=0.7"
-        # data = f"hint={hint}&token={oauth_token}&callback=https%3A%2F%2Fbibliotheek.be%2Fmy-library%2Flogin%2Fcallback&email={username}&password={password}"
-        data = {"hint": hint, "token": oauth_token, "callback":"https://bibliotheek.be/my-library/login/callback", "email": username, "password": password}
-        #login
-        #example header response: https://bibliotheek.be/my-library/login/callback?oauth_token=*******************&oauth_verifier=**********&uilang=nl
-        response = self.s.post('https://mijn.bibliotheek.be/openbibid/rest/auth/login',headers=header,data=data,timeout=_TIMEOUT)
-        _LOGGER.debug(f"bibliotheek.be login get result status code: {response.status_code}")
-        _LOGGER.debug(f"bibliotheek.be login get header: {response.headers}")
-        _LOGGER.debug(f"bibliotheek.be login get cookies: {response.cookies}")
-        _LOGGER.debug(f"bibliotheek.be login session cookies: {self.s.cookies}")
-        login_location = response.headers.get('location')
-        login_locatonurl_parsed = urlsplit(login_location)
-        login_query_params = parse_qs(login_locatonurl_parsed.query)
-        oauth_verifier = login_query_params.get('oauth_verifier')
-        oauth_token = query_params.get('oauth_token')
-        _LOGGER.debug(f"bibliotheek.be url params parsed: login_location: {login_location}, oauth_token: {oauth_token}, oauth_verifier: {oauth_verifier}")
-        #example login_location: https://bibliotheek.be/my-library/login/callback?oauth_token=***************&oauth_verifier=*********&uilang=nl
-        
-        assert response.status_code in [200,303]
-        if response.status_code == 303:
-            self.s.headers["Content-Type"] = "application/x-www-form-urlencoded"
-            self.s.headers["referer"] = "https://mijn.bibliotheek.be/"
-            self.s.headers["pragma"] = "no-cache"
-            self.s.headers["upgrade-insecure-requests"] = "1"
-            # header["X-Cache"] = "MISS ausy-cultuurconnect-web7"
-            # self.s.headers["accept"] = "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7"
-            # header["Accept-Encoding"]= "gzip, deflate, br, zstd"
-            #login callback based on url in location of response received
-            _LOGGER.debug(f"bibliotheek.be login session header: {self.s.headers}")
-            # response = self.s.get(login_location,headers=header,timeout=_TIMEOUT)
-            response = self.s.get(login_location,timeout=_TIMEOUT)
-            login_callback_location = response.headers.get('location')
-            _LOGGER.debug(f"bibliotheek.be login callback get result status code: {response.status_code}")
-            _LOGGER.debug(f"bibliotheek.be login callback get header: {response.headers} ") #text {response.text}")
+        if require_auth:
+            #authorize based on url in location of response received
+            response = self.s.get(oauth_location,headers=header,timeout=_TIMEOUT)
+            _LOGGER.debug(f"bibliotheek.be auth get result status code: {response.status_code}")
+            _LOGGER.debug(f"bibliotheek.be auth get header: {response.headers}")
+            assert response.status_code == 200
+            
+            header["Content-Type"] = "application/x-www-form-urlencoded"
+            header["Host"] = "mijn.bibliotheek.be"
+            header["Origin"] = "https://bibliotheek.be"
+            header["Referer"] = oauth_location
+            header["Accept-Language"] = "en-US,en;q=0.9,nl;q=0.8,fr;q=0.7"
+            # data = f"hint={hint}&token={oauth_token}&callback=https%3A%2F%2Fbibliotheek.be%2Fmy-library%2Flogin%2Fcallback&email={username}&password={password}"
+            data = {"hint": hint, "token": oauth_token, "callback":"https://bibliotheek.be/my-library/login/callback", "email": username, "password": password}
+            #login
+            #example header response: https://bibliotheek.be/my-library/login/callback?oauth_token=*******************&oauth_verifier=**********&uilang=nl
+            response = self.s.post('https://mijn.bibliotheek.be/openbibid/rest/auth/login',headers=header,data=data,timeout=_TIMEOUT)
+            _LOGGER.debug(f"bibliotheek.be login get result status code: {response.status_code}")
+            _LOGGER.debug(f"bibliotheek.be login get header: {response.headers}")
+            _LOGGER.debug(f"bibliotheek.be login get cookies: {response.cookies}")
+            _LOGGER.debug(f"bibliotheek.be login session cookies: {self.s.cookies}")
+            login_location = response.headers.get('location')
+            login_locatonurl_parsed = urlsplit(login_location)
+            login_query_params = parse_qs(login_locatonurl_parsed.query)
+            oauth_verifier = login_query_params.get('oauth_verifier')
+            oauth_token = query_params.get('oauth_token')
+            _LOGGER.debug(f"bibliotheek.be url params parsed: login_location: {login_location}, oauth_token: {oauth_token}, oauth_verifier: {oauth_verifier}")
+            #example login_location: https://bibliotheek.be/my-library/login/callback?oauth_token=***************&oauth_verifier=*********&uilang=nl
+            
+            assert response.status_code in [200,303]
+            if response.status_code == 303:
+                self.s.headers["Content-Type"] = "application/x-www-form-urlencoded"
+                self.s.headers["referer"] = "https://mijn.bibliotheek.be/"
+                self.s.headers["pragma"] = "no-cache"
+                self.s.headers["upgrade-insecure-requests"] = "1"
+                # header["X-Cache"] = "MISS ausy-cultuurconnect-web7"
+                # self.s.headers["accept"] = "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7"
+                # header["Accept-Encoding"]= "gzip, deflate, br, zstd"
+                #login callback based on url in location of response received
+                _LOGGER.debug(f"bibliotheek.be login session header: {self.s.headers}")
+                # response = self.s.get(login_location,headers=header,timeout=_TIMEOUT)
+                response = self.s.get(login_location,timeout=_TIMEOUT)
+                login_callback_location = response.headers.get('location')
+                _LOGGER.debug(f"bibliotheek.be login callback get result status code: {response.status_code}")
+                _LOGGER.debug(f"bibliotheek.be login callback get header: {response.headers} ") #text {response.text}")
         # assert response.status_code == 302
         # if response.status_code == 302:        
         #     # request access code, https://mijn.bibliotheek.be/openbibid-api.html#_authenticatie
@@ -118,105 +119,75 @@ class ComponentSession(object):
         # else:
         #     #login session was already available
         #     login_callback_location = "https://bibliotheek.be/mijn-bibliotheek/lidmaatschappen"
+
+
         login_callback_location = "https://bibliotheek.be/mijn-bibliotheek/lidmaatschappen"
         #lidmaatschap based on url in location of response received
         # response = self.s.get(f"{login_callback_location}",headers=header,timeout=_TIMEOUT)
         response = self.s.get(f"{login_callback_location}",timeout=_TIMEOUT)
-        lidmaatschap_response_header = response.headers
         _LOGGER.debug(f"bibliotheek.be lidmaatschap get result status code: {response.status_code}") # response: {response.text}")
         _LOGGER.debug(f"bibliotheek.be lidmaatschap get header: {response.headers}")
+        # _LOGGER.debug(f"bibliotheek.be lidmaatschap get text: {response.text}")
         assert response.status_code == 200
-        soup = BeautifulSoup(response.text, 'html.parser')
-        
-        
-        #find all accounts
-        accounts = soup.find_all('div', class_='my-library-user-library-account-list__account')
-        # _LOGGER.debug(f"accounts found: {accounts}")
+        # soup = BeautifulSoup(response.text, 'html.parser')
 
-        # {
-            # "1234567": {
-                # "account_details": {
-                    # "id": "1234567",
-                    # "libraryName": "Bibliotheek *****",
-                    # "userName": "first last",
-                    # "email": "email@mail.com",
-                    # "alertEmailSync": false,
-                    # "barcode": "1234567890123",
-                    # "url": "https://bibliotheek.be/mijn-bibliotheek/lidmaatschappen/1234567"
-                # },
-                # "loans": {
-                    # "loans": 0,
-                    # "url": "https://bibliotheek.be/mijn-bibliotheek/lidmaatschappen/1234567/uitleningen",
-                    # "history": "https://bibliotheek.be/mijn-bibliotheek/lidmaatschappen/1234567/leenhistoriek"
-                # },
-                # "reservations": {
-                    # "reservations": 0,
-                    # "url": "https://bibliotheek.be/mijn-bibliotheek/lidmaatschappen/1234567/reservaties"
-                # },
-                # "open_amounts": {
-                    # "open_amounts": 0,
-                    # "url": ""
-                # }
-            # }
-        # }
-        #iterate through each account
-        for div in accounts:
-            try:
-                # account_details = div.select('[class^=sync-email-notification]')[0].get(':default-active-account')
-                # account_details = div.select('[class^=sync-email-notification]')
-                account_details = div.find(attrs={':default-active-account': True}).get(':default-active-account')
-            except AttributeError:
-                account_details = ""
-            #get the number of loans
-            account_details = json.loads(account_details)
-            try:
-                account_url = f"https://bibliotheek.be{div.find('a')['href']}"
-            except AttributeError:
-                account_url = ""
-            account_details['url'] = account_url
-            try:
-                loans = div.find('li', class_='my-library-user-library-account-list__loans-link').a.text
-                if "geen" in loans.lower():
-                    loans = 0
-                else:
-                    loans = int(loans.lower().replace(' uitleningen','').replace(' uitlening',''))
-            except AttributeError:
-                loans = 0
-            try:
-                loans_url = f"https://bibliotheek.be{div.find('a', href=re.compile('uitleningen')).get('href')}"
-            except AttributeError:
-                loans_url = ""
-            try:
-                loan_history_url = f"https://bibliotheek.be{div.find('a', href=re.compile('leenhistoriek')).get('href')}"
-            except AttributeError:
-                loan_history_url = ""
-            try:
-                reservations = div.find('li', class_='my-library-user-library-account-list__holds-link').a.text
-                if "geen" in reservations.lower():
-                    reservations = 0
-                else:
-                    reservations= int(reservations.lower().replace(' reserveringen','').replace(' reservering',''))
-            except AttributeError:
-                reservations = 0
-            try:
-                reservations_url = f"https://bibliotheek.be{div.find('a', href=re.compile('reservaties')).get('href')}"
-            except AttributeError:
-                reservations_url = ""
-            try:
-                open_amounts = div.find('li', class_='my-library-user-library-account-list__open-amount-link').a.text
-                if "geen" in open_amounts.lower():
-                    open_amounts = 0
-                else:
-                    open_amounts = float(open_amounts.lower().replace(' openstaande bedragen','').replace(' openstaand bedrag','').replace(' openstaande kosten','').replace('€','').replace(',','.'))
-            except AttributeError:
-                open_amounts = 0
-            try:
-                open_amounts_url = f"https://bibliotheek.be{div.find('a', href=re.compile('te-betalen')).get('href')}"
-            except AttributeError:
-                open_amounts_url = ""
-            account_details['barcode_spell'] = self.count_repeated_numbers(account_details['barcode'])
-            _LOGGER.debug(f"uitleningen {loans} , url: {loans_url}, reservatie: {reservations}, url {account_url}, account_details {account_details}")
-            self.userdetails[account_details.get('id')]={'account_details': account_details , 'loans': { 'loans': loans, 'url': loans_url, 'history': loan_history_url}, 'reservations': {'reservations': reservations, 'url':reservations_url}, 'open_amounts': {'open_amounts': open_amounts, 'url':''}}
+        # MEMBERSHIPS:
+        # https://bibliotheek.be/api/my-library/memberships
+        #   activities per account id, for which hasError is false
+        #https://bibliotheek.be/api/my-library/123456789/activities
+
+        # open payments: https://bibliotheek.be/my-library-user/open-payments-count
+        # https://bibliotheek.be/my-library-user/new-recommendations-count
+        # https://bibliotheek.be/my-library-user/messages-count
+        # https://bibliotheek.be/my-library-user/unconfirmed-memberships-count
+
+        responseMemberships = self.s.get(f"https://bibliotheek.be/api/my-library/memberships",timeout=_TIMEOUT)
+        assert responseMemberships.status_code == 200
+        memberships = responseMemberships.json()
+
+        
+        for library_name, accounts in memberships.items():
+            for account in accounts:
+                if not account.get("hasError", True) and account.get("id"):
+                    _LOGGER.debug(f"Library: {library_name}")
+                    _LOGGER.debug(f"  ID: {account.get('id','')}")
+                    _LOGGER.debug(f"  Name: {account.get('name','')}")
+                    _LOGGER.debug(f"  Email: {account.get('mail','')}")
+                    _LOGGER.debug(f"  Barcode: {account.get('barcode','')}")
+                    _LOGGER.debug(f"  Library URL: {account.get('library','')}")
+                    responseActivities = self.s.get(f"https://bibliotheek.be/api/my-library/{account['id']}/activities",timeout=_TIMEOUT)
+                    assert responseActivities.status_code == 200
+                    activities = responseActivities.json()
+                    _LOGGER.debug(f" LoanHistoryUrl: {activities.get("loanHistoryUrl", "")}")
+                    _LOGGER.debug(f" numberOfHolds: {activities.get("numberOfHolds",0)}")
+                    _LOGGER.debug(f" numberOfLoans: {activities.get("numberOfLoans",0)}")
+                    _LOGGER.debug(f" openAmount: {activities.get("openAmount",0)}")
+                    _LOGGER.debug(f" Loansurl: https://bibliotheek.be/my-library/memberships/{account['id']}/loans")
+                    _LOGGER.debug(f" Holdsurl (reservations): https://bibliotheek.be/my-library/memberships/{account['id']}/holds")
+                    
+                    account['barcode_spell'] = self.count_repeated_numbers(account.get('barcode',''))
+                    account['userName'] = account.get('name','')
+                    account['libraryName'] = library_name
+                   
+                    # Final data structure
+                    self.userdetails[account.get('id')] = {
+                        'account_details': account,
+                        'loans': {
+                            'loans': activities.get("numberOfLoans",0),
+                            'url': f"https://bibliotheek.be/my-library/memberships/{account['id']}/loans",
+                            'history': f"{account.get('library','')}{activities.get("loanHistoryUrl", "")}"
+                        },
+                        'reservations': {
+                            'reservations': activities.get("numberOfHolds",0),
+                            'url': f"https://bibliotheek.be/my-library/memberships/{account['id']}/holds"
+                        },
+                        'open_amounts': {
+                            'open_amounts': activities.get("openAmount",0),
+                            'url': f"https://bibliotheek.be/my-library/memberships/{account['id']}/pay"
+                        }
+                    }
+                    _LOGGER.debug(f"account_details: {json.dumps(self.userdetails[account.get('id')],indent=4)}")
+
         _LOGGER.debug(f"self.userdetails {json.dumps(self.userdetails,indent=4)}")
         return self.userdetails
         
