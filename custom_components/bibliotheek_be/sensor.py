@@ -292,7 +292,7 @@ class ComponentUserSensor(Entity):
 
     @property
     def name(self) -> str:
-        return f"{self._username} {self._libraryName}"
+        return self.unique_id
 
     @property
     def extra_state_attributes(self) -> dict:
@@ -439,7 +439,7 @@ class ComponentLibrarySensor(Entity):
 
     @property
     def name(self) -> str:
-        return f"Bib {self._libraryName}"
+        return self.unique_id
 
     @property
     def extra_state_attributes(self) -> dict:
@@ -679,7 +679,7 @@ class ComponentListSensor(Entity):
 
     @property
     def name(self) -> str:
-        return f"List {self._listname}"
+        return self.unique_id
 
     @property
     def extra_state_attributes(self) -> dict:
