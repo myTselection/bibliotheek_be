@@ -92,49 +92,62 @@ Sensors `Bibliotheek.be` should become available with the number of items lent o
 	| `library_name`  | Name(s) of the library at which some items need to be returned first (or comma spearated list of names) |
 	
 	</details>
-- Following services `bibliotheek_be` will be available:
-	- <details><summary><code>bibliotheek_be.extend_loan</code>: extend a single item, based on <code>extend_loan_id</code>, if the <code>days_remaining</code> is less than or equal the max set</summary> 
+- <details><summary><code>sensor.bibliotheek_be_list_[listname]</code> will be created for each list linked to the account</summary>
+
+	| Attribute | Description |
+	| --------- | ----------- |
+	| State     | Number of items on the list |
+	| `List name `   | Technical user id assigned by bibliotheek.be |
+	| `List ID`   | The unique user barcode which is also shown on the library card |
+	| `List URL`   | Image url of the unique user barcode which is also shown on the library card |
+	| `List last changed` | Number of loans by this user at this library (same as state value) |
+  | `List items`  | Json containing all the items linked to the list. The structure of json is:<br/>  `[{ tile: 'title of the item', ` <br/>&nbsp;&nbsp;&nbsp;&nbsp;`author: 'author of the item', ` <br/>&nbsp;&nbsp;&nbsp;&nbsp;`url: 'url of the item }]`  |
 	
-		```
-		service: bibliotheek_be.extend_loan
-		data:
-		  extend_loan_id: 12345678 
-		  max_days_remaining: 8
-		``` 
+	</details>
+
+
+Following services `bibliotheek_be` will be available:
+- <details><summary><code>bibliotheek_be.extend_loan</code>: extend a single item, based on <code>extend_loan_id</code>, if the <code>days_remaining</code> is less than or equal the max set</summary> 
+	
+  ```
+  service: bibliotheek_be.extend_loan
+  data:
+    extend_loan_id: 12345678 
+    max_days_remaining: 8
+  ``` 
 		
-	  </details>
+  </details>	
+- <details><summary><code>bibliotheek_be.extend_loans_library</code>: extend all loans of a library that have <code>days_remaining</code> less than or equal the max set</summary>
 	
-	- <details><summary><code>bibliotheek_be.extend_loans_library</code>: extend all loans of a library that have <code>days_remaining</code> less than or equal the max set</summary>
-	
-		```
-		service: bibliotheek_be.extend_loans_library
-		data:
-		  library_name: 'City' 
-		  max_days_remaining: 8
-		```
-		  
-	  </details>
+  ```
+  service: bibliotheek_be.extend_loans_library
+  data:
+    library_name: 'City' 
+    max_days_remaining: 8
+  ```
+    
+	</details>
 	  
-	- <details><summary><code>bibliotheek_be.extend_loans_user</code>: extend all loans of a user that have <code>days_remaining</code> less than or equal the max set</summary>
+- <details><summary><code>bibliotheek_be.extend_loans_user</code>: extend all loans of a user that have <code>days_remaining</code> less than or equal the max set</summary>
 	
-		```
-		service: bibliotheek_be.extend_loan
-		data:
-		  barcode: '1234567890123'
-		  max_days_remaining: 8
-		```
+  ```
+  service: bibliotheek_be.extend_loan
+  data:
+    barcode: '1234567890123'
+    max_days_remaining: 8
+  ```
 		  
-          </details>
+  </details>
 	  
-	- <details><summary><code>bibliotheek_be.extend_all_loans</code>: extend all loans that have <code>days_remaining</code> less than or equal the max set</summary>
+- <details><summary><code>bibliotheek_be.extend_all_loans</code>: extend all loans that have <code>days_remaining</code> less than or equal the max set</summary>
 	
-		```
-		service: bibliotheek_be.extend_loan
-		data:
-		  max_days_remaining: 8
-		```
+  ```
+  service: bibliotheek_be.extend_loan
+  data:
+    max_days_remaining: 8
+  ```
 		  
-	   </details>
+	</details>
 
 ## Status
 Still some optimisations are planned, see [Issues](https://github.com/myTselection/bibliotheek_be/issues) section in GitHub.

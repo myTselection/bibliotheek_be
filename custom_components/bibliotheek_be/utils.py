@@ -149,21 +149,9 @@ class ComponentSession(object):
         for library_name, accounts in memberships.items():
             for account in accounts:
                 if not account.get("hasError", True) and account.get("id"):
-                    _LOGGER.debug(f"Library: {library_name}")
-                    _LOGGER.debug(f"  ID: {account.get('id','')}")
-                    _LOGGER.debug(f"  Name: {account.get('name','')}")
-                    _LOGGER.debug(f"  Email: {account.get('mail','')}")
-                    _LOGGER.debug(f"  Barcode: {account.get('barcode','')}")
-                    _LOGGER.debug(f"  Library URL: {account.get('library','')}")
                     responseActivities = self.s.get(f"https://bibliotheek.be/api/my-library/{account['id']}/activities",timeout=_TIMEOUT)
                     assert responseActivities.status_code == 200
                     activities = responseActivities.json()
-                    _LOGGER.debug(f" LoanHistoryUrl: {activities.get("loanHistoryUrl", "")}")
-                    _LOGGER.debug(f" numberOfHolds: {activities.get("numberOfHolds",0)}")
-                    _LOGGER.debug(f" numberOfLoans: {activities.get("numberOfLoans",0)}")
-                    _LOGGER.debug(f" openAmount: {activities.get("openAmount",0)}")
-                    _LOGGER.debug(f" Loansurl: https://bibliotheek.be/my-library/memberships/{account['id']}/loans")
-                    _LOGGER.debug(f" Holdsurl (reservations): https://bibliotheek.be/my-library/memberships/{account['id']}/holds")
                     
                     account['barcode_spell'] = self.count_repeated_numbers(account.get('barcode',''))
                     account['userName'] = account.get('name','')
@@ -184,7 +172,8 @@ class ComponentSession(object):
                         'open_amounts': {
                             'open_amounts': activities.get("openAmount",0),
                             'url': f"https://bibliotheek.be/my-library/memberships/{account['id']}/pay"
-                        }
+                        },
+                        'updated': True
                     }
                     _LOGGER.debug(f"account_details: {json.dumps(self.userdetails[account.get('id')],indent=4)}")
 
@@ -277,6 +266,7 @@ class ComponentSession(object):
             reason = dl.dd.text.strip()
             closed_dates.append({'date': date, 'reason': reason})
         library_info['closed_dates'] = closed_dates
+        library_info['updated'] = True
 
         _LOGGER.debug(f"librarydetails {json.dumps(library_info,indent=4)}") 
         return library_info
@@ -308,6 +298,86 @@ class ComponentSession(object):
             # "library": "Bibliotheek ***"
         # }
     # }
+
+    def user_lists(self):
+        listdetails = dict()
+        _LOGGER.debug(f"user_lists")
+
+        response = self.s.get(f"https://bibliotheek.be/mijn-bibliotheek/lijsten",timeout=_TIMEOUT)
+        assert response.status_code == 200
+        soup = BeautifulSoup(response.text, 'html.parser')
+
+        lists = soup.find_all('div', class_='my-library-lists--teaser')
+
+        for item in lists:
+            # Name and URL
+            name_tag = item.find('div', class_='my-library-lists--teaser__basic-info').find('a')
+            name = name_tag.text.strip()
+            url = name_tag['href']
+            
+            # Extract ID from the URL
+            match_id = re.search(r'/lijsten/(\d+)', url)
+            list_id = match_id.group(1) if match_id else None
+            
+            # Last changed date
+            changed_info = item.find('div', class_='my-library-lists--teaser__changed-info').text.strip()
+            match_date = re.search(r'op (.+)', changed_info)
+            last_changed = match_date.group(1).strip() if match_date else 'unknown'
+            
+            # Number of items
+            show_detail_text = item.find('div', class_='my-library-lists--showdetail').text.strip()
+            match_count = re.search(r'Toon (\d+) titels', show_detail_text)
+            num_items = int(match_count.group(1)) if match_count else 0
+
+            _LOGGER.debug(f"Name: {name}, URL: {url}, Items: {num_items}, Last changed: {last_changed}")
+
+            listdetails[list_id] = {
+                'id': list_id,
+                'name': name,
+                'url': f"https://bibliotheek.be{url}",
+                'num_items': num_items,
+                'last_changed': last_changed,
+                'updated': True
+            }
+            response = self.s.get(f"https://bibliotheek.be/my-library/list/{list_id}/list-items?items_per_page=300&status=1",timeout=_TIMEOUT)
+            assert response.status_code == 200
+            listItemDetails = response.json()
+
+            # too many data elements received, eg:
+                #  'id': '123456789',
+                # 'cover': 'https://webservices.bibliotheek.be/index.php?func=cover&ISBN=9789082410617&VLACCnr=123456&CDR=&EAN=&ISMN=&EBS=&coversize=small',
+                # 'title': 'Het smelt',
+                # 'url': 'https://bibliotheek.be/catalogus/lize-spit/het-smelt/boek/library-marc-vlacc_123456',
+                # 'author': 'Lize Spit',
+                # 'publicationYear': 'Uitgave van: 2023',
+                # 'itemId': '|library/marc/vlacc|123456',
+                # 'wiseIds': '123456789',
+                # 'addToListUrl': '/my-library/add-to-list/123456/nojs?catalog_items%5B0%5D=library-marc-vlacc_123456&destination=/my-library/list/123456/list-items%3Fitems_per_page%3D300%26status%3D1&exclude_lists%5B0%5D=322528',
+                # 'deleteUrl': '/my-library/lists/123456/item/8704917/delete',
+                # 'searchBibUrl': '/?itemid=%7Clibrary/marc/vlacc%7123456',
+                # 'dateAdded': {
+                #     'date': '2024-12-09 22:21:39.000000',
+                #     'timezone_type': 1,
+                #     'timezone': '+00:00'
+                # },
+                # 'year': '2023',
+                # 'status': 1
+            # Extract only the desired fields
+            filtered_data = [
+                {
+                    'title': item.get('title'),
+                    'author': item.get('author'),
+                    'url': item.get('url')
+                }
+                for item in listItemDetails.get('items', [])
+            ]
+            listdetails[list_id]['items'] = filtered_data
+
+        return listdetails
+
+
+
+
     def loan_details(self, url):
         loandetails = dict()
         header = {"Content-Type": "application/json"}
