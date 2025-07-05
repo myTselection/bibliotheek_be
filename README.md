@@ -39,7 +39,9 @@ Sensors `Bibliotheek.be` should become available with the number of items lent o
 	| `barcode`   | The unique user barcode which is also shown on the library card |
 	| `barcode_url`   | Image url of the unique user barcode which is also shown on the library card |
 	| `num_loans` | Number of loans by this user at this library (same as state value) |
+	| `loans_url` | URL for overview of loans by this user at this library |
 	| `num_reservations`  | Number of reservations by this user at this library |
+	| `reservations_url`  | URL for overview of reservations by this user at this library |
 	| `open_amounts`  | Open amount (€) due to this library (eg related to fines) |
 	| `username`  | First and lastname of the user |
 	| `libraryName`  | Name of the library or the group of libraries |
@@ -270,13 +272,15 @@ content: >-
     
     - Kaart {{state_attr(user,'barcode') }} ({{state_attr(user,'barcode_spell')| join(', ') }}): 
         [<img src="{{state_attr(user,'barcode_url') }}" height=100></img>]({{state_attr(user,'barcode_url') }})
+
+    - Account vervalt {{state_attr(user,'expirationDate')}}{% if state_attr(user,'isExpired') %} Vervallen{% endif %}{% if state_attr(user,'isBlocked') %} Geblokkeerd{% endif %}{% if state_attr(user,'hasError') %} Foutief{% endif %}
     
-    - Gereserveerde stuks: {{state_attr(user,'num_reservations') }}
+    - Gereserveerde stuks: <a href="{{state_attr(user,'reservations_url')}}" target="_blank">{{state_attr(user,'num_reservations') }}</a>
     
     - Uitstaande boetes: {{state_attr(user,'open_amounts') }}
       {% if state_attr(user,'num_loans') > 0 %}
       {% set all_books = state_attr(user,'loandetails').values()  |sort(attribute="days_remaining", reverse=False)%}
-    - In totaal {{state_attr(user,'num_loans') }} uitgeleend{% if all_books %}
+    - In totaal <a href="{{state_attr(user,'loans_url')}}" target="_blank">{{state_attr(user,'num_loans') }}</a> uitgeleend{% if all_books %}
         {% for book in all_books %}
         - <details><summary>{% if book.extend_loan_id %}{{ strptime(book.loan_till, "%d/%m/%Y").strftime("%a %d/%m/%Y") }}{% else %}<b>{{ strptime(book.loan_till, "%d/%m/%Y").strftime("%a %d/%m/%Y") }}</b>{% endif %}: {{ book.title }}{% if book.author != "-"%} ~ {{ book.author }}{% endif %}</summary> 
     
@@ -313,11 +317,13 @@ content: >-
     - Kaart {{state_attr(user,'barcode') }} ({{state_attr(user,'barcode_spell')| join(', ') }}):
     [<img src="{{state_attr(user,'barcode_url') }}" height=100></img>]({{state_attr(user,'barcode_url') }})
     
-    - Gereserveerde stuks: {{state_attr(user,'num_reservations') }}
+    - Account vervalt {{state_attr(user,'expirationDate')}}{% if state_attr(user,'isExpired') %} Vervallen{% endif %}{% if state_attr(user,'isBlocked') %} Geblokkeerd{% endif %}{% if state_attr(user,'hasError') %} Foutief{% endif %}
+    
+    - Gereserveerde stuks: <a href="{{state_attr(user,'reservations_url')}}" target="_blank">{{state_attr(user,'num_reservations') }}</a>
     
     - Uitstaande boetes: {{state_attr(user,'open_amounts') }}
     
-    - Geen uitleningen
+    - <a href="{{state_attr(user,'loans_url')}}" target="_blank">Geen uitleningen</a>
     
       Laatst bijgewerkt: {{state_attr(user,'last update')  | as_timestamp | timestamp_custom("%d-%m-%Y %H:%M")}}
 
@@ -327,6 +333,7 @@ content: >-
 
   {% endfor %}
 title: Gebruikers
+
 
 
 ```
