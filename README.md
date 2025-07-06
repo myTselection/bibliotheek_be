@@ -339,6 +339,37 @@ title: Gebruikers
 ```
 </details>
 
+
+
+### Markdown Example for lists:
+
+<details><summary>Click to show the Mardown example</summary>
+
+```
+type: markdown
+content: >-
+  {% set librarylists = states |
+  selectattr("entity_id","match","^sensor.bibliotheek_be_list*") | list %}
+  
+  {% for librarylist_device in librarylists %}
+  
+  {% set librarylist = librarylist_device.entity_id %}
+  
+  
+  <details><summary><a href="{{state_attr(librarylist,'list_url') }}" target="_blank">{{state_attr(librarylist,'list_name') }}</a> #{{states(librarylist) }}, Lijst laatst bijgewerkt {{state_attr(librarylist,'list_last_changed') }}:</summary>
+  
+  {% set all_books = state_attr(librarylist,'list_items') | list %}
+    {% for book in all_books %}
+    - <a href="{{book.url}}" target="_blank">{{ book.title }}{% if book.author != "-"%} ~ {{ book.author }}{% endif %}</a>
+    {% endfor %}
+  </details> 
+  
+  {% endfor %}
+title: Lijsten
+
+```
+</details>
+
 ### Example with conditional check for warnings:
 
 #### Extra binary sensor based on personal perference on number of days to limit the warning
