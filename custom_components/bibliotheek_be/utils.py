@@ -146,6 +146,8 @@ class ComponentSession(object):
         memberships = responseMemberships.json()
 
         
+        libraryDetails = {}
+
         for library_name, accounts in memberships.items():
             for account in accounts:
                 if not account.get("hasError", True) and account.get("id"):
@@ -156,6 +158,7 @@ class ComponentSession(object):
                     account['barcode_spell'] = self.count_repeated_numbers(account.get('barcode',''))
                     account['userName'] = account.get('name','')
                     account['libraryName'] = library_name
+                    libraryDetails[library_name] = account.get('library','')
                    
                     # Final data structure
                     self.userdetails[account.get('id')] = {
@@ -178,7 +181,19 @@ class ComponentSession(object):
                     _LOGGER.debug(f"account_details: {json.dumps(self.userdetails[account.get('id')],indent=4)}")
 
         _LOGGER.debug(f"self.userdetails {json.dumps(self.userdetails,indent=4)}")
-        return self.userdetails
+
+        
+        responseLoans = self.s.get(f"https://bibliotheek.be/my-library-overview-loans",timeout=_TIMEOUT)
+        assert responseLoans.status_code == 200
+        loans = responseLoans.json()
+
+        
+        responseReservations = self.s.get(f"https://bibliotheek.be/my-library-overview-reservations",timeout=_TIMEOUT)
+        assert responseReservations.status_code == 200
+        reservations = responseReservations.json()
+        userdetailsAndLoans = {"userdetails": self.userdetails, "loans": loans, "reservations": reservations, "libraryDetails": libraryDetails}
+
+        return userdetailsAndLoans
         
     def count_repeated_numbers(self, input_string):
         counts = []
@@ -577,3 +592,31 @@ class ComponentSession(object):
             self._confirm_extension(extend_loan_ids)
         _LOGGER.info(f"extend_all done for {num_id_found} items") 
         return num_id_found
+    
+
+
+# #manual tests - enable debug logging
+
+# _LOGGER = logging.getLogger(__name__)
+# _LOGGER.setLevel(logging.DEBUG)
+# if not logging.getLogger().hasHandlers():
+#     logging.basicConfig(level=logging.DEBUG)
+# _LOGGER.debug("Debug logging is now enabled.")
+
+# session = ComponentSession()
+
+# # #LOCAL TESTS
+
+# _userdetails = session.login("username", "password")
+# print(_userdetails)
+# # user_lists = session.user_lists()
+# # print(user_lists)
+
+
+# for user_id, userdetail in _userdetails.items():
+#     url = userdetail.get('loans').get('url')
+#     if url:
+#         _LOGGER.info(f"Calling loan details {userdetail.get('account_details').get('userName')}")
+#         loandetails = session.loan_details(url)
+#         # print(loandetails)
+

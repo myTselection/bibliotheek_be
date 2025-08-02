@@ -120,6 +120,7 @@ class ComponentData:
         self._password = password
         self._client = client
         self._session = ComponentSession()
+        self._userDetailsAndLoansAndReservations = None
         self._userdetails = None
         self._userLists = None
         self._loandetails = dict()
@@ -138,32 +139,37 @@ class ComponentData:
             self._session = ComponentSession()
 
         if self._session:
-            self._userdetails = await self._hass.async_add_executor_job(lambda: self._session.login(self._username, self._password))
+            self._userDetailsAndLoansAndReservations = await self._hass.async_add_executor_job(lambda: self._session.login(self._username, self._password))
+            self._userdetails = self._userDetailsAndLoansAndReservations.get('userdetails', None)
+            self._loandetails = self._userDetailsAndLoansAndReservations.get('loandetails', None)
+            self._reservationdetails = self._userDetailsAndLoansAndReservations.get('reservations', None)
             assert self._userdetails is not None
             _LOGGER.debug(f"{NAME} update login completed")
+            
             for user_id, userdetail in self._userdetails.items():
-                url = userdetail.get('loans').get('url')
-                if url:
-                    _LOGGER.info(f"Calling loan details {userdetail.get('account_details').get('userName')}")
-                    loandetails = await self._hass.async_add_executor_job(lambda: self._session.loan_details(url))
-                    assert loandetails is not None
-                    username = userdetail.get('account_details').get('userName')
-                    barcode = userdetail.get('account_details').get('barcode')
-                    barcode_spell = userdetail.get('account_details').get('barcode_spell')
-                    for loan_info in loandetails.values():
-                        loan_info["user"] = username
-                        loan_info["userid"] = user_id
-                        loan_info["barcode"] = barcode
-                        loan_info["barcode_spell"] = barcode_spell
-                        libraryName = loan_info.get('library')
-                        libraryurl = f"{userdetail.get('account_details').get('library')}/adres-en-openingsuren"
-                        if not self._librarydetails.get(libraryName):
-                            _LOGGER.info(f"Calling library details {libraryName}")
-                            librarydetails = await self._hass.async_add_executor_job(lambda: self._session.library_details(libraryurl))
-                            assert librarydetails is not None
-                            self._librarydetails[libraryName] = librarydetails
-                    _LOGGER.debug(f"loandetails {json.dumps(loandetails,indent=4)}") 
-                    self._loandetails[user_id] = loandetails
+                self._librarydetails[userdetail.get('account_details').get('libraryName')] = userdetail.get('account_details').get('library')
+            #     url = userdetail.get('loans').get('url')
+            #     if url:
+            #         _LOGGER.info(f"Calling loan details {userdetail.get('account_details').get('userName')}")
+            #         loandetails = await self._hass.async_add_executor_job(lambda: self._session.loan_details(url))
+            #         assert loandetails is not None
+            #         username = userdetail.get('account_details').get('userName')
+            #         barcode = userdetail.get('account_details').get('barcode')
+            #         barcode_spell = userdetail.get('account_details').get('barcode_spell')
+            #         for loan_info in loandetails.values():
+            #             loan_info["user"] = username
+            #             loan_info["userid"] = user_id
+            #             loan_info["barcode"] = barcode
+            #             loan_info["barcode_spell"] = barcode_spell
+            #             libraryName = loan_info.get('library')
+            #             libraryurl = f"{userdetail.get('account_details').get('library')}/adres-en-openingsuren"
+            #             if not self._librarydetails.get(libraryName):
+            #                 _LOGGER.info(f"Calling library details {libraryName}")
+            #                 librarydetails = await self._hass.async_add_executor_job(lambda: self._session.library_details(libraryurl))
+            #                 assert librarydetails is not None
+            #                 self._librarydetails[libraryName] = librarydetails
+            #         _LOGGER.debug(f"loandetails {json.dumps(loandetails,indent=4)}") 
+            #         self._loandetails[user_id] = loandetails
             self._loanDetailsUpdated = True
 
 
