@@ -60,17 +60,12 @@ async def dry_setup(hass, config_entry, async_add_devices):
         sensors.append(sensorUser)
         
     library_names = set()
-    loan_types = dict()
-    for user_id, loan_data in componentData._loandetails.items():
-        for loan_id, loan_item in loan_data.items():
-            libraryName = loan_item.get('library')
-            library_names.add(libraryName)
-            loan_type = loan_item.get('loan_type')
-            loan_types[loan_type] = 0
-    _LOGGER.debug(f"loan_types dry_setup {json.dumps(loan_types,indent=4)}") 
+    for loan_item in componentData._loandetails:
+        libraryName = loan_item.get('location',{}).get('libraryName')
+        library_names.add(libraryName)
         
     for libraryName in library_names:
-        sensorDate = ComponentLibrarySensor(componentData, hass, libraryName, loan_types)
+        sensorDate = ComponentLibrarySensor(componentData, hass, libraryName)
         _LOGGER.debug(f"{NAME} Init sensor for date {libraryName}")
         sensors.append(sensorDate)
         
@@ -142,12 +137,36 @@ class ComponentData:
             self._userDetailsAndLoansAndReservations = await self._hass.async_add_executor_job(lambda: self._session.login(self._username, self._password))
             self._userdetails = self._userDetailsAndLoansAndReservations.get('userdetails', None)
             self._loandetails = self._userDetailsAndLoansAndReservations.get('loandetails', None)
-            self._reservationdetails = self._userDetailsAndLoansAndReservations.get('reservations', None)
+            self._reservationdetails = self._userDetailsAndLoansAndReservations.get('reservationdetails', None)
             assert self._userdetails is not None
             _LOGGER.debug(f"{NAME} update login completed")
             
             for user_id, userdetail in self._userdetails.items():
-                self._librarydetails[userdetail.get('account_details').get('libraryName')] = userdetail.get('account_details').get('library')
+                libraryurl = f"{userdetail.get('account_details').get('library')}/adres-en-openingsuren"
+                libraryName = userdetail.get('account_details').get('libraryName')
+                if not self._librarydetails.get(libraryName):
+                    librarydetails = await self._hass.async_add_executor_job(lambda: self._session.library_details(libraryurl))
+                    assert librarydetails is not None
+                    self._librarydetails[libraryName] = librarydetails
+
+            for loanitem in self._loandetails:
+                userLibMatchFound = False
+                for account in self._userdetails.values():
+                    if account.get('account_details').get('name') == loanitem.get('accountName') and account.get('account_details').get('libraryName') == loanitem.get('location',{}).get('libraryName'):
+                        userLibMatchFound = True
+                        oldLoans = account.get('loandetails',[])
+                        account['loandetails'] = oldLoans + [loanitem]
+                        account.get('loans')['loans'] = len(oldLoans) + 1
+                        break
+                
+                if not userLibMatchFound:
+                    accountId = loanitem.get('accountId')
+                    oldLoans = self._userdetails.get(accountId).get('loandetails',[])
+                    self._userdetails.get(accountId)['loandetails'] = oldLoans + [loanitem]
+                    self._userdetails.get(accountId).get('loans')['loans'] = len(oldLoans) + 1
+
+
+
             #     url = userdetail.get('loans').get('url')
             #     if url:
             #         _LOGGER.info(f"Calling loan details {userdetail.get('account_details').get('userName')}")
@@ -201,6 +220,12 @@ class ComponentData:
         """Return the name of the sensor."""
         return self.unique_id
 
+def shortenLibraryName(libraryName):
+    if len(libraryName) > 20 and " - " in libraryName: 
+        new_name = libraryName.split(" - ")[1]
+        return new_name
+    return libraryName
+
 class ComponentUserSensor(Entity):
     def __init__(self, data, hass, userid):
         self._data = data
@@ -219,7 +244,7 @@ class ComponentUserSensor(Entity):
         self._barcode = self._data._userdetails.get(self._userid).get('account_details').get('barcode')
         self._barcode_spell = self._data._userdetails.get(self._userid).get('account_details').get('barcode_spell')
         self._username = self._data._userdetails.get(self._userid).get('account_details').get('userName')
-        self._libraryName = self._data._userdetails.get(self._userid).get('account_details').get('libraryName')
+        self._libraryName = shortenLibraryName(self._data._userdetails.get(self._userid).get('account_details').get('libraryName'))
         self._expirationDate = self._data._userdetails.get(self._userid).get('account_details').get('expirationDate')
         self._hasError = self._data._userdetails.get(self._userid).get('account_details').get('hasError')
         self._isBlocked = self._data._userdetails.get(self._userid).get('account_details').get('isBlocked')
@@ -234,7 +259,7 @@ class ComponentUserSensor(Entity):
         self._pendingValidationDate = self._data._userdetails.get(self._userid).get('account_details').get('pendingValidationDate')
         self._supportsOnlineRenewal = self._data._userdetails.get(self._userid).get('account_details').get('supportsOnlineRenewal')
         self._wasRecentlyAdded = self._data._userdetails.get(self._userid).get('account_details').get('wasRecentlyAdded')
-        self._loandetails = self._data._loandetails.get(self._userid)
+        self._loandetails = self._data._userdetails.get(self._userid).get('loandetails')
 
     @property
     def state(self):
@@ -260,7 +285,7 @@ class ComponentUserSensor(Entity):
         self._barcode = self._data._userdetails.get(self._userid).get('account_details').get('barcode')
         self._barcode_spell = self._data._userdetails.get(self._userid).get('account_details').get('barcode_spell')
         self._username = self._data._userdetails.get(self._userid).get('account_details').get('userName')
-        self._libraryName = self._data._userdetails.get(self._userid).get('account_details').get('libraryName')
+        self._libraryName = shortenLibraryName(self._data._userdetails.get(self._userid).get('account_details').get('libraryName'))
         self._expirationDate = self._data._userdetails.get(self._userid).get('account_details').get('expirationDate')
         self._hasError = self._data._userdetails.get(self._userid).get('account_details').get('hasError')
         self._isBlocked = self._data._userdetails.get(self._userid).get('account_details').get('isBlocked')
@@ -275,7 +300,7 @@ class ComponentUserSensor(Entity):
         self._pendingValidationDate = self._data._userdetails.get(self._userid).get('account_details').get('pendingValidationDate')
         self._supportsOnlineRenewal = self._data._userdetails.get(self._userid).get('account_details').get('supportsOnlineRenewal')
         self._wasRecentlyAdded = self._data._userdetails.get(self._userid).get('account_details').get('wasRecentlyAdded')
-        self._loandetails = self._data._loandetails.get(self._userid)
+        self._loandetails = self._data._userdetails.get(self._userid).get('loandetails')
         
         
     async def async_will_remove_from_hass(self):
@@ -365,25 +390,25 @@ class ComponentUserSensor(Entity):
         
 
 class ComponentLibrarySensor(Entity):
-    def __init__(self, data, hass, libraryName, loanTypes):
+    def __init__(self, data, hass, libraryName):
         self._data = data
         self._hass = hass
         self._libraryName = libraryName
         self._last_update = None
         self._lowest_till_date = None
-        self._days_left = None
+        self._library_days_left = None
         self._some_not_extendable = False
+        self._some_late = False
         self._loandetails = []
         self._num_loans = 0
         self._num_total_loans = 0
-        self._loantypes = loanTypes
-        self._current_librarydetails = self._data._librarydetails.get(libraryName)
+        self._current_librarydetails = self._data._librarydetails.get(self._libraryName)
             
 
     @property
     def state(self):
         """Return the state of the sensor."""
-        return self._days_left
+        return self._library_days_left
 
     async def async_update(self):
         await self._data.update()
@@ -394,35 +419,34 @@ class ComponentLibrarySensor(Entity):
         self._current_librarydetails['updated'] = False
         self._last_update =  self._data._lastupdate
         self._loandetails = []
-        self._loantypes= {key: 0 for key in self._loantypes}
         self._num_loans = 0
         self._num_total_loans = 0
         self._some_not_extendable = False
-        self._days_left = None
+        self._some_late = False
+        self._library_days_left = None
         
-        for user_id, loan_data in self._data._loandetails.items():
-            _LOGGER.debug(f"library loop {user_id} {self._libraryName}") 
-            for loan_id, loan_item in loan_data.items():
-                library_name_loop = loan_item.get('library')
-                if library_name_loop == self._libraryName:
-                    _LOGGER.debug(f"library_name_loop {library_name_loop} {self._libraryName}") 
-                    self._num_total_loans += 1
-                    curr_loan_type = loan_item.get('loan_type')
-                    self._loantypes.setdefault(curr_loan_type, 0)
-                    self._loantypes[curr_loan_type] += 1
-                    self._loandetails.append(loan_item)
-                    if (self._days_left is None) or (self._days_left > loan_item.get('days_remaining')):
-                        _LOGGER.debug(f"library_name_loop less days {library_name_loop} {loan_item}")
-                        self._days_left = loan_item.get('days_remaining')
-                        self._lowest_till_date = loan_item.get('loan_till')
-                        self._num_loans = 1
-                        if loan_item.get('extend_loan_id') is None or loan_item.get('extend_loan_id','').strip() == '':
-                            self._some_not_extendable = True
-                    elif self._days_left == loan_item.get('days_remaining'):
-                        _LOGGER.debug(f"library_name_loop same days {library_name_loop} {loan_item}")
-                        self._num_loans += 1
-                        if loan_item.get('extend_loan_id') is None or loan_item.get('extend_loan_id','').strip() == '':
-                            self._some_not_extendable = True
+        today = datetime.today()
+        for loan_item in self._data._loandetails:
+            library_name_loop = loan_item.get('location',{}).get('libraryName')
+            if library_name_loop == self._libraryName:
+                _LOGGER.debug(f"library_name_loop {library_name_loop} {self._libraryName}") 
+                self._num_total_loans += 1
+                item_due_date_str = loan_item.get('dueDate')
+                item_due_date = datetime.strptime(item_due_date_str, '%d/%m/%Y')
+                item_days_left = (item_due_date - today).days
+                self._loandetails.append(loan_item)
+                if (self._library_days_left is None) or (self._library_days_left > item_days_left):
+                    _LOGGER.debug(f"library_name_loop less days {library_name_loop} {loan_item}")
+                    self._library_days_left = item_days_left
+                    self._lowest_till_date = item_due_date
+                    self._num_loans = 1
+                elif self._library_days_left == item_days_left:
+                    _LOGGER.debug(f"library_name_loop same days {library_name_loop} {loan_item}")
+                    self._num_loans += 1
+                if loan_item.get('isRenewable') == False:
+                    self._some_not_extendable = True
+                if loan_item.get('isLate') == True:
+                    self._some_late = True
         
         
     async def async_will_remove_from_hass(self):
@@ -440,7 +464,7 @@ class ComponentLibrarySensor(Entity):
     def unique_id(self) -> str:
         """Return the name of the sensor."""
         return (
-            f"{NAME} Bib {self._libraryName}"
+            f"{NAME} Bib {shortenLibraryName(self._libraryName)}"
         )
 
     @property
@@ -453,9 +477,10 @@ class ComponentLibrarySensor(Entity):
         attributes = {
             ATTR_ATTRIBUTION: NAME,
             "last update": self._last_update,
-            "libraryName": self._libraryName,
-            "days_left": self._days_left,
+            "libraryName": shortenLibraryName(self._libraryName),
+            "days_left": self._library_days_left,
             "some_not_extendable": self._some_not_extendable,
+            "some_late": self._some_late,
             "lowest_till_date": self._lowest_till_date,
             "num_loans": self._num_loans,
             "num_total_loans": self._num_total_loans,
@@ -470,7 +495,6 @@ class ComponentLibrarySensor(Entity):
             "opening_hours": self._current_librarydetails.get('hours'),
             "closed_dates": self._current_librarydetails.get('closed_dates')            
         }
-        attributes.update(self._loantypes)
         return attributes
 
 
@@ -502,7 +526,7 @@ class ComponentLibrarySensor(Entity):
 
     @property
     def friendly_name(self) -> str:
-        return f"Bib {self._libraryName}"
+        return f"Bib {shortenLibraryName(self._libraryName)}"
         
         
 class ComponentLibrariesWarningSensor(Entity):
@@ -511,8 +535,9 @@ class ComponentLibrariesWarningSensor(Entity):
         self._hass = hass
         self._last_update = None
         self._lowest_till_date = None
-        self._days_left = None
+        self._library_days_left = None
         self._some_not_extendable = False
+        self._some_late = False
         self._num_loans = 0  
         self._num_total_loans = 0
         self._library_name = ""
@@ -520,7 +545,7 @@ class ComponentLibrariesWarningSensor(Entity):
     @property
     def state(self):
         """Return the state of the sensor."""
-        return self._days_left
+        return self._library_days_left
 
     async def async_update(self):
         await self._data.update()
@@ -532,33 +557,36 @@ class ComponentLibrariesWarningSensor(Entity):
         self._num_loans = 0
         self._num_total_loans = 0
         self._some_not_extendable = False
+        self._some_late = False
         self._library_name = ""
-        self._days_left = None
+        self._library_days_left = None
         
-        for user_id, loan_data in self._data._loandetails.items():
-            _LOGGER.debug(f"library warning loop {user_id}") 
-            if loan_data != None:
-                for loan_id, loan_item in loan_data.items():
-                    library_name_loop = loan_item.get('library')
-                    _LOGGER.debug(f"library_name_loop {library_name_loop}") 
-                    self._num_total_loans += 1
-                    if loan_item.get('days_remaining') and ((self._days_left is None) or (self._days_left > loan_item.get('days_remaining'))):
-                        _LOGGER.debug(f"library_name_loop less days {library_name_loop} {loan_item}")
-                        self._days_left = loan_item.get('days_remaining')
-                        self._lowest_till_date = loan_item.get('loan_till')
-                        self._num_loans = 1
-                        if loan_item.get('library') and loan_item.get('library') not in self._library_name:
-                            self._some_not_extendable = False
-                            self._library_name += f"{loan_item.get('library')} "
-                        if loan_item.get('extend_loan_id') is None or loan_item.get('extend_loan_id','').strip() == '':
-                            self._some_not_extendable = True
-                    elif self._days_left == loan_item.get('days_remaining'):
-                        _LOGGER.debug(f"library_name_loop same days {library_name_loop} {loan_item}")
-                        self._num_loans += 1
-                        if loan_item.get('library') and loan_item.get('library') not in self._library_name:
-                            self._library_name += f"{loan_item.get('library')} "
-                        if loan_item.get('extend_loan_id') is None or loan_item.get('extend_loan_id','').strip() == '':
-                            self._some_not_extendable = True
+        today = datetime.today()
+        for loan_item in self._data._loandetails:
+            _LOGGER.debug(f"library warning loop")
+            library_name_loop = loan_item.get('location',{}).get('libraryName')
+            _LOGGER.debug(f"library_name_loop {library_name_loop}") 
+            self._num_total_loans += 1
+            item_due_date_str = loan_item.get('dueDate')
+            item_due_date = datetime.strptime(item_due_date_str, '%d/%m/%Y')
+            item_days_left = (item_due_date - today).days
+
+            if (self._library_days_left is None) or (self._library_days_left > item_days_left):
+                _LOGGER.debug(f"library_name_loop less days {library_name_loop} {loan_item}")
+                self._library_days_left = item_days_left
+                self._lowest_till_date = item_due_date
+                self._num_loans = 1
+                if library_name_loop not in self._library_name:
+                    self._library_name += f"{shortenLibraryName(library_name_loop)} "
+            elif self._library_days_left == item_days_left:
+                _LOGGER.debug(f"library_name_loop same days {library_name_loop} {loan_item}")
+                self._num_loans += 1
+                if library_name_loop not in self._library_name:
+                    self._library_name += f"{shortenLibraryName(library_name_loop)} "
+            if loan_item.get('isRenewable') == False:
+                self._some_not_extendable = True
+            if loan_item.get('isLate') == False:
+                self._some_late = True
         
         
     async def async_will_remove_from_hass(self):
@@ -589,12 +617,13 @@ class ComponentLibrariesWarningSensor(Entity):
         attributes = {
             ATTR_ATTRIBUTION: NAME,
             "last update": self._last_update,
-            "days_left": self._days_left,
+            "days_left": self._library_days_left,
             "some_not_extendable": self._some_not_extendable,
+            "some_late": self._some_late,
             "lowest_till_date": self._lowest_till_date,
             "num_loans": self._num_loans,
             "num_total_loans": self._num_total_loans,
-            "library_name":  self._library_name,
+            "library_name":  shortenLibraryName(self._library_name),
             "entity_picture": "https://raw.githubusercontent.com/myTselection/bibliotheek_be/master/icon.png",
             "refresh_required": False
         }

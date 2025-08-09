@@ -180,18 +180,19 @@ class ComponentSession(object):
                     }
                     _LOGGER.debug(f"account_details: {json.dumps(self.userdetails[account.get('id')],indent=4)}")
 
-        _LOGGER.debug(f"self.userdetails {json.dumps(self.userdetails,indent=4)}")
+        # _LOGGER.debug(f"self.userdetails {json.dumps(self.userdetails,indent=4)}")
 
         
         responseLoans = self.s.get(f"https://bibliotheek.be/my-library-overview-loans",timeout=_TIMEOUT)
         assert responseLoans.status_code == 200
-        loans = responseLoans.json()
+        loandetails = responseLoans.json()
 
         
         responseReservations = self.s.get(f"https://bibliotheek.be/my-library-overview-reservations",timeout=_TIMEOUT)
         assert responseReservations.status_code == 200
         reservations = responseReservations.json()
-        userdetailsAndLoans = {"userdetails": self.userdetails, "loans": loans, "reservations": reservations, "libraryDetails": libraryDetails}
+        userdetailsAndLoans = {'userdetails': self.userdetails, 'loandetails': loandetails, 'reservationdetails': reservations, 'librarydetails': libraryDetails}
+        # _LOGGER.debug(f"userdetailsAndLoans: {json.dumps(userdetailsAndLoans,indent=4)}")
 
         return userdetailsAndLoans
         
@@ -392,7 +393,7 @@ class ComponentSession(object):
 
 
 
-
+#NO MORE USED
     def loan_details(self, url):
         loandetails = dict()
         header = {"Content-Type": "application/json"}
@@ -607,7 +608,7 @@ class ComponentSession(object):
 
 # # #LOCAL TESTS
 
-# _userdetails = session.login("username", "password")
+# # _userdetails = session.login("username", "password")
 # print(_userdetails)
 # # user_lists = session.user_lists()
 # # print(user_lists)
