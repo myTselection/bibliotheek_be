@@ -585,7 +585,7 @@ class ComponentLibrariesWarningSensor(Entity):
                     self._library_name += f"{shortenLibraryName(library_name_loop)} "
             if loan_item.get('isRenewable') == False:
                 self._some_not_extendable = True
-            if loan_item.get('isLate') == False:
+            if loan_item.get('isLate') == True:
                 self._some_late = True
         
         
