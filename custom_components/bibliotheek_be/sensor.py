@@ -132,7 +132,8 @@ class ComponentData:
         _LOGGER.info("Fetching update stuff for " + NAME)
         if not(self._session):
             self._session = ComponentSession()
-
+        
+        today = datetime.today()
         if self._session:
             self._userDetailsAndLoansAndReservations = await self._hass.async_add_executor_job(lambda: self._session.login(self._username, self._password))
             self._userdetails = self._userDetailsAndLoansAndReservations.get('userdetails', None)
@@ -149,8 +150,16 @@ class ComponentData:
                     assert librarydetails is not None
                     self._librarydetails[libraryName] = librarydetails
 
+
             for loanitem in self._loandetails:
                 userLibMatchFound = False
+                
+                item_due_date_str = loanitem.get('dueDate')
+                item_due_date = datetime.strptime(item_due_date_str, '%d/%m/%Y')
+                item_days_left = (item_due_date - today).days
+                loanitem["days_remaining"] = item_days_left
+                loanitem["extend_loan_id"] = loanitem.get("itemId")
+
                 for account in self._userdetails.values():
                     if account.get('account_details').get('name') == loanitem.get('accountName') and account.get('account_details').get('libraryName') == loanitem.get('location',{}).get('libraryName'):
                         userLibMatchFound = True

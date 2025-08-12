@@ -192,38 +192,29 @@ content: >
     ## Bib {{state_attr(library,'libraryName') }}:
     {% set all_books = state_attr(library,'loandetails')| list |sort(attribute="days_remaining", reverse=False) %}
     {% if all_books %}
-    {% set urgent_books = all_books | selectattr("days_remaining", "eq",int(state_attr(library,'days_left'))) | list |sort(attribute="extend_loan_id", reverse=False)%}
+    {% set urgent_books = all_books | selectattr("days_remaining", "eq",int(state_attr(library,'days_left'))) | list |sort(attribute="isRenewable", reverse=False)%}
     {% set other_books = all_books | rejectattr("days_remaining", "eq",int(state_attr(library,'days_left'))) | list |sort(attribute="days_remaining", reverse=False)%}
 
-    - {{state_attr(library,"num_loans") }} stuk{% if state_attr(library,'num_loans')|int > 1 %}s{% endif %} {%if state_attr(library,'some_not_extendable')%}**in te leveren** binnen{% else %}te verlengen in{% endif %} **{{states(library)}}** dag{% if states(library)|int > 1 %}en{% endif %}: {{strptime(state_attr(library,'lowest_till_date'), "%d/%m/%Y").strftime("%a %d/%m/%Y") }}
+    - {{state_attr(library,"num_loans") }} stuk{% if state_attr(library,'num_loans')|int > 1 %}s{% endif %} {%if state_attr(library,'some_not_extendable')%}**in te leveren** binnen{% else %}te verlengen in{% endif %} **{{states(library)}}** dag{% if states(library)|int > 1 %}en{% endif %}: 
 
   <details>
       <summary>Toon details:</summary>
         {% for book in all_books  %}
   <details>
-      <summary>{% if book.extend_loan_id %}{{ strptime(book.loan_till, "%d/%m/%Y").strftime("%a %d/%m/%Y") }}{% else %}<b>{{ strptime(book.loan_till, "%d/%m/%Y").strftime("%a %d/%m/%Y") }}</b>{% endif %}: {{ book.title }}{% if book.author != "-"%} ~ {{ book.author }}{% endif %}</summary> 
+      <summary>{% if book.isRenewable %}{{ strptime(book.dueDate, "%d/%m/%Y").strftime("%a %d/%m/%Y") }}{% else %}<b>{{ strptime(book.dueDate, "%d/%m/%Y").strftime("%a %d/%m/%Y") }}</b>{% endif %}: {{ book.title }}</summary> 
 
     |  |  |
     | :--- | :--- |
     | Binnen: | {{ book.days_remaining }} dagen |
-    | Verlenging: | {% if book.extend_loan_id %}<a href="https://{{state_attr(library,'libraryName') }}.bibliotheek.be/mijn-bibliotheek/lidmaatschappen/{{book.userid}}/uitleningen/verlengen?loan-ids={{book.extend_loan_id}}" target="_blank">verlengbaar</a>{% else %}**Niet verlengbaar**{% endif %} |
-    | Bibliotheek: | <a href="{{book.url}}" target="_blank">{{book.library}}</a> |
-    | Gebruiker: | [{{book.user}} ({{book.barcode}})](https://barcodeapi.org/api/128/{{book.barcode}}) |
-    | Type: | {% if book.loan_type == 'Unknown' %}Onbekend{% else %}{{book.loan_type}}{% endif %} |
-    | Afbeelding: | [<img src="{{ book.image_src }}" height="100"/>]({{book.url}}) |
+    | Verlenging: | {% if book.isRenewable %}<a href="{{state_attr(library,'url') }}{{book.renewUrl}}" target="_blank">verlengbaar</a>{% else %}**Niet verlengbaar**{% endif %} |
+    | Bibliotheek: | <a href="{{state_attr(library,'url') }}" target="_blank">{{book.location.libraryName}}</a> |
+    | Gebruiker: | <a href="{{book.accountUrl}}" target="_blank">{{book.accountName}}</a> |
 
     </details>
         {% endfor %}
   </details>
     {% endif %}
-    - <details><summary>In totaal {{state_attr(library,'num_total_loans') }} uitgeleend:</summary>
-    
-      - Boeken: {{state_attr(library,'Boek') }}
-      - Onbekend: {{state_attr(library,'Unknown') }}
-      - DVDs: {{state_attr(library,'Dvd') }}
-      - Strips: {{state_attr(library,'Strip') }}
-      
-    </details>
+    - In totaal {{state_attr(library,'num_total_loans') }} uitgeleend
     
     - <details><summary>Info Bib {{state_attr(library,'libraryName') }}</summary>
 
@@ -245,6 +236,7 @@ content: >
   timestamp_custom("%d %h %H:%M")}}
     {% endfor %}
 
+
 ```
 
 </details>
@@ -259,6 +251,7 @@ content: >-
   {% set library_users = states |
   selectattr("entity_id","match","^sensor.bibliotheek_be_*") |
   rejectattr("entity_id","match","^sensor.bibliotheek_be_bib*")|
+  rejectattr("entity_id","match","^sensor.bibliotheek_be_list*")|
   rejectattr("entity_id","match","^sensor.bibliotheek_be_warning")| list%}
 
   {% for user_device in library_users %}
@@ -279,18 +272,17 @@ content: >-
     
     - Uitstaande boetes: {{state_attr(user,'open_amounts') }}
       {% if state_attr(user,'num_loans') > 0 %}
-      {% set all_books = state_attr(user,'loandetails').values()  |sort(attribute="days_remaining", reverse=False)%}
+      {% set all_books = state_attr(user,'loandetails')  |sort(attribute="days_remaining", reverse=False)%}
     - In totaal <a href="{{state_attr(user,'loans_url')}}" target="_blank">{{state_attr(user,'num_loans') }}</a> uitgeleend{% if all_books %}
         {% for book in all_books %}
-        - <details><summary>{% if book.extend_loan_id %}{{ strptime(book.loan_till, "%d/%m/%Y").strftime("%a %d/%m/%Y") }}{% else %}<b>{{ strptime(book.loan_till, "%d/%m/%Y").strftime("%a %d/%m/%Y") }}</b>{% endif %}: {{ book.title }}{% if book.author != "-"%} ~ {{ book.author }}{% endif %}</summary> 
+        - <details><summary>{% if book.isRenewable %}{{ strptime(book.dueDate, "%d/%m/%Y").strftime("%a %d/%m/%Y") }}{% else %}<b>{{ strptime(book.dueDate, "%d/%m/%Y").strftime("%a %d/%m/%Y") }}</b>{% endif %}: {{ book.title }}</summary> 
     
             |  |  |
             | :--- | :--- |
             | Binnen: | {{ book.days_remaining }} dagen |
-            | Verlenging: | {% if book.extend_loan_id %}verlengbaar{% else %}**Niet verlengbaar**{% endif %} |
-            | Bibliotheek: | <a href="{{book.url}}" target="_blank">{{book.library}}</a> |
-            | Type: | {% if book.loan_type == 'Unknown' %}Onbekend{% else %}{{book.loan_type}}{% endif %} |
-            | Afbeelding: | [<img src="{{ book.image_src }}" height="100"/>]({{book.url}}) |
+            | Verlenging: | {% if book.isRenewable %}<a href="{{state_attr(user,'libaryUrl')}}{{book.renewUrl}}" target="_blank">verlengbaar</a>{% else %}**Niet verlengbaar**{% endif %} |
+            | Bibliotheek: | <a href="{{state_attr(user,'libaryUrl')}}" target="_blank">{{book.location.libraryName}}</a> |
+            
           </details>
         {% endfor %}
       {% endif %}
