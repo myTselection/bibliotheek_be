@@ -13,9 +13,21 @@ from homeassistant.const import (
     CONF_PASSWORD,
     CONF_RESOURCES,
     CONF_SCAN_INTERVAL,
-    CONF_USERNAME
+    CONF_USERNAME,
+    EVENT_HOMEASSISTANT_STOP,
+    Platform
 )
-
+from homeassistant.core import (
+    HomeAssistant,
+    ServiceResponse,
+    SupportsResponse
+)
+from homeassistant.exceptions import HomeAssistantError
+from homeassistant.helpers.update_coordinator import CoordinatorEntity
+from .coordinator import ComponentUpdateCoordinator
+from .const import (
+    CONF_REFRESH_INTERVAL
+)
 # manifestfile = Path(__file__).parent / 'manifest.json'
 # with open(manifestfile, 'r') as json_file:
 #     manifest_data = json.load(json_file)
@@ -42,23 +54,23 @@ This is a custom component
 _LOGGER = logging.getLogger(__name__)
 
 
-async def async_setup(hass: HomeAssistant, config: ConfigType):
-    """Set up this component using YAML."""
-    _LOGGER.info(STARTUP)
-    if config.get(DOMAIN) is None:
-        # We get her if the integration is set up using config flow
-        return True
+# async def async_setup(hass: HomeAssistant, config: ConfigType):
+#     """Set up this component using YAML."""
+#     _LOGGER.info(STARTUP)
+#     if config.get(DOMAIN) is None:
+#         # We get here if the integration is set up using config flow
+#         return True
 
-    try:
-        await hass.config_entries.async_forward_entry(config, Platform.SENSOR)
-        _LOGGER.info("Successfully added sensor from the integration")
-    except ValueError:
-        pass
+#     try:
+#         await hass.config_entries.async_forward_entry(config, Platform.SENSOR)
+#         _LOGGER.info("Successfully added platform from the integration")
+#     except ValueError:
+#         pass
 
-    await hass.config_entries.flow.async_init(
-            DOMAIN, context={"source": config_entries.SOURCE_IMPORT}, data={}
-        )
-    return True
+#     await hass.config_entries.flow.async_init(
+#             DOMAIN, context={"source": config_entries.SOURCE_IMPORT}, data={}
+#         )
+#     return True
 
 async def async_update_options(hass: HomeAssistant, config_entry: ConfigEntry):
     await hass.config_entries.async_reload(config_entry.entry_id)
@@ -67,18 +79,29 @@ async def update_listener(hass: HomeAssistant, config_entry: ConfigEntry):
     """Reload integration when options changed"""
     await hass.config_entries.async_reload(config_entry.entry_id)
 
-async def async_unload_entry(hass: HomeAssistant, config_entry: ConfigEntry):
-    unload_ok = await hass.config_entries.async_unload_platforms(config_entry, PLATFORMS)
-    # if unload_ok:
-        # hass.data[DOMAIN].pop(config_entry.entry_id)
+async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
+    # Flag that a reload is in progress
+    hass.data[DOMAIN]["reloading"] = True
 
+    unload_ok = await hass.config_entries.async_unload_platforms(entry, PLATFORMS)
+    if unload_ok:
+        hass.data[DOMAIN].pop(entry.entry_id)
+    hass.data[DOMAIN].pop("reloading", None)
     return unload_ok
 
 
 async def async_setup_entry(hass: HomeAssistant, config_entry: ConfigEntry) -> bool:
     """Set up component as config entry."""
-    await hass.config_entries.async_forward_entry_setups(config_entry, PLATFORMS)
+    refresh_interval = config_entry.options.get(CONF_REFRESH_INTERVAL, 30)
+    # refresh_interval = 1 #DEBUG
+    coordinator = ComponentUpdateCoordinator(hass, config_entry, refresh_interval)
+    await coordinator.async_initialize() 
     
+    hass.data.setdefault(DOMAIN, {})[config_entry.entry_id] = {
+        "coordinator": coordinator
+    }
+    await hass.config_entries.async_forward_entry_setups(config_entry, PLATFORMS)
+    config_entry.async_on_unload(config_entry.add_update_listener(async_update_options))
     _LOGGER.info(f"{DOMAIN} register_services")
     register_services(hass, config_entry)
     return True
@@ -86,11 +109,12 @@ async def async_setup_entry(hass: HomeAssistant, config_entry: ConfigEntry) -> b
 
 async def async_remove_entry(hass, config_entry):
     try:
-        await hass.config_entries.async_forward_entry_unload(config_entry, Platform.SENSOR)
-        _LOGGER.info("Successfully removed sensor from the integration")
+        for platform in PLATFORMS:
+            await hass.config_entries.async_forward_entry_unload(config_entry, platform)
+            _LOGGER.info("Successfully removed sensor from the integration")
     except ValueError:
         pass
-        
+
 
 def register_services(hass, config_entry):
         
@@ -103,10 +127,38 @@ def register_services(hass, config_entry):
         username = config.get("username")
         password = config.get("password")
         session = ComponentSession()
-        userdetails = await hass.async_add_executor_job(lambda: session.login(username, password))
+        userDetailsAndLoansAndReservations = await hass.async_add_executor_job(lambda: session.login(username, password))
+        userdetails = userDetailsAndLoansAndReservations.get('userdetails', None)
+        loandetails = userDetailsAndLoansAndReservations.get('loandetails', None)
+        today = datetime.today()
         assert userdetails is not None
         _LOGGER.debug(f"{NAME} handle_extend_loan login completed")
         extend_loan_id_found = False
+        for loanitem in loandetails:
+            curr_extend_loan_id = loanitem.get("itemId")
+            item_due_date_str = loanitem.get('dueDate')
+            item_due_date = datetime.strptime(item_due_date_str, '%d/%m/%Y')
+            curr_days_remaining = (item_due_date - today).days
+            library_name_loop = loanitem.get('location',{}).get('libraryName')
+            if str(curr_extend_loan_id) == str(extend_loan_id):
+                extend_loan_id_found = True
+                _LOGGER.debug(f"handle_extend_loan curr_extend_loan_id {curr_extend_loan_id} library_name_loop {library_name_loop}")
+                if int(curr_days_remaining) <= int(max_days_remaining):
+                    extension_confirmation = await hass.async_add_executor_job(lambda: session.extend_single_item(url, extend_loan_id, True))
+                    state_warning_sensor = hass.states.get(f"sensor.{DOMAIN}_warning")
+                    _LOGGER.debug(f"state_warning_sensor sensor.{DOMAIN}_warning {state_warning_sensor}")
+                    state_warning_sensor_attributes = dict(state_warning_sensor.attributes)
+                    state_warning_sensor_attributes["refresh_required"] = state_warning_sensor_attributes.get("refresh_required", False) or (extension_confirmation > 0)
+                    _LOGGER.debug(f"state_warning_sensor attributes sensor.{DOMAIN}_warning: {state_warning_sensor_attributes}")
+                    await hass.async_add_executor_job(lambda: hass.states.set(f"sensor.{DOMAIN}_warning",state_warning_sensor.state,state_warning_sensor_attributes))
+                else:
+                    _LOGGER.debug(f"skipped extension since {curr_days_remaining} below max {max_days_remaining}")
+                    break
+            if extend_loan_id_found:
+                break
+
+
+
         for user_id, userdetail in userdetails.items():
             url = userdetail.get('loans').get('url')
             _LOGGER.debug(f"handle_extend_loan calling loan details {userdetail.get('account_details').get('userName')}, url {url}")

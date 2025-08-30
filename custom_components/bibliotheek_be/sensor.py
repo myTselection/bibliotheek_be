@@ -13,6 +13,10 @@ from homeassistant.util import Throttle
 
 from . import DOMAIN, NAME
 from .utils import *
+from homeassistant.const import (
+    CONF_PASSWORD,
+    CONF_USERNAME
+)
 
 _LOGGER = logging.getLogger(__name__)
 _DATETIME_FORMAT = "%Y-%m-%dT%H:%M:%S.0%z"
@@ -20,8 +24,8 @@ _DATETIME_FORMAT = "%Y-%m-%dT%H:%M:%S.0%z"
 
 PLATFORM_SCHEMA = PLATFORM_SCHEMA.extend(
     {
-        vol.Required("username"): cv.string,
-        vol.Required("password"): cv.string,
+        vol.Required(CONF_USERNAME): cv.string,
+        vol.Required(CONF_PASSWORD): cv.string
     }
 )
 
@@ -29,10 +33,10 @@ MIN_TIME_BETWEEN_UPDATES = timedelta(minutes=120 + random.uniform(10, 20))
 # MIN_TIME_BETWEEN_UPDATES = timedelta(minutes=1 + random.uniform(1, 2))
 
 
-async def dry_setup(hass, config_entry, async_add_devices):
+async def dry_setup(hass, config_entry, async_add_devices, coordinator):
     config = config_entry
-    username = config.get("username")
-    password = config.get("password")
+    username = config.get(CONF_USERNAME)
+    password = config.get(CONF_PASSWORD)
 
     check_settings(config, hass)
     sensors = []
@@ -41,18 +45,19 @@ async def dry_setup(hass, config_entry, async_add_devices):
         username,
         password,
         async_get_clientsession(hass),
-        hass
+        hass, 
+        coordinator
     )
+
+    
     await componentData._force_update()
+    _LOGGER.debug(f"userdetails dry_setup {json.dumps(componentData._userdetails,indent=4)}")     
+    _LOGGER.debug(f"loandetails dry_setup {json.dumps(componentData._loandetails,indent=4)}") 
     assert componentData._userdetails is not None
     assert componentData._loandetails is not None
     assert componentData._librarydetails is not None
     assert componentData._userLists is not None
     
-    
-    _LOGGER.debug(f"userdetails dry_setup {json.dumps(componentData._userdetails,indent=4)}") 
-    
-    _LOGGER.debug(f"loandetails dry_setup {json.dumps(componentData._loandetails,indent=4)}") 
     
     for userid, userdetail in componentData._userdetails.items():
         sensorUser = ComponentUserSensor(componentData, hass, userid)
@@ -88,15 +93,17 @@ async def async_setup_platform(
 ):
     """Setup sensor platform for the ui"""
     _LOGGER.info("async_setup_platform " + NAME)
-    await dry_setup(hass, config_entry, async_add_devices)
+    coordinator = hass.data[DOMAIN][config_entry.entry_id]["coordinator"]
+    await dry_setup(hass, config_entry, async_add_devices, coordinator)
     return True
 
 
 async def async_setup_entry(hass, config_entry, async_add_devices):
     """Setup sensor platform for the ui"""
     _LOGGER.info("async_setup_entry " + NAME)
+    coordinator = hass.data[DOMAIN][config_entry.entry_id]["coordinator"]
     config = config_entry.data
-    await dry_setup(hass, config, async_add_devices)
+    await dry_setup(hass, config, async_add_devices, coordinator)
     return True
 
 
@@ -109,18 +116,19 @@ async def async_remove_entry(hass, config_entry):
         pass
         
 
+
 class ComponentData:
-    def __init__(self, username, password, client, hass):
+    def __init__(self, username, password, client, hass, coordinator):
         self._username = username
         self._password = password
         self._client = client
-        self._session = ComponentSession()
         self._userDetailsAndLoansAndReservations = None
         self._userdetails = None
         self._userLists = None
         self._loandetails = dict()
         self._librarydetails = dict()
         self._hass = hass
+        self._coordinator = coordinator
         self._lastupdate = None
         self._oauth_token = None
 
@@ -130,96 +138,32 @@ class ComponentData:
     # same as update, but without throttle to make sure init is always executed
     async def _force_update(self):
         _LOGGER.info("Fetching update stuff for " + NAME)
-        if not(self._session):
-            self._session = ComponentSession()
+        await self._coordinator.async_update_data()
         
-        today = datetime.today()
-        if self._session:
-            self._userDetailsAndLoansAndReservations = await self._hass.async_add_executor_job(lambda: self._session.login(self._username, self._password))
-            self._userdetails = self._userDetailsAndLoansAndReservations.get('userdetails', None)
-            self._loandetails = self._userDetailsAndLoansAndReservations.get('loandetails', None)
-            self._reservationdetails = self._userDetailsAndLoansAndReservations.get('reservationdetails', None)
-            assert self._userdetails is not None
-            _LOGGER.debug(f"{NAME} update login completed")
-            
-            for user_id, userdetail in self._userdetails.items():
-                libraryurl = f"{userdetail.get('account_details').get('library')}/adres-en-openingsuren"
-                libraryName = userdetail.get('account_details').get('libraryName')
-                if not self._librarydetails.get(libraryName):
-                    librarydetails = await self._hass.async_add_executor_job(lambda: self._session.library_details(libraryurl))
-                    assert librarydetails is not None
-                    self._librarydetails[libraryName] = librarydetails
-
-
-            for loanitem in self._loandetails:
-                userLibMatchFound = False
-                
-                item_due_date_str = loanitem.get('dueDate')
-                item_due_date = datetime.strptime(item_due_date_str, '%d/%m/%Y')
-                item_days_left = (item_due_date - today).days
-                loanitem["days_remaining"] = item_days_left
-                loanitem["extend_loan_id"] = loanitem.get("itemId")
-
-                for account in self._userdetails.values():
-                    if account.get('account_details').get('name') == loanitem.get('accountName') and account.get('account_details').get('libraryName') == loanitem.get('location',{}).get('libraryName'):
-                        userLibMatchFound = True
-                        oldLoans = account.get('loandetails',[])
-                        account['loandetails'] = oldLoans + [loanitem]
-                        account.get('loans')['loans'] = len(oldLoans) + 1
-                        break
-                
-                if not userLibMatchFound:
-                    accountId = loanitem.get('accountId')
-                    oldLoans = self._userdetails.get(accountId).get('loandetails',[])
-                    self._userdetails.get(accountId)['loandetails'] = oldLoans + [loanitem]
-                    self._userdetails.get(accountId).get('loans')['loans'] = len(oldLoans) + 1
-
-
-
-            #     url = userdetail.get('loans').get('url')
-            #     if url:
-            #         _LOGGER.info(f"Calling loan details {userdetail.get('account_details').get('userName')}")
-            #         loandetails = await self._hass.async_add_executor_job(lambda: self._session.loan_details(url))
-            #         assert loandetails is not None
-            #         username = userdetail.get('account_details').get('userName')
-            #         barcode = userdetail.get('account_details').get('barcode')
-            #         barcode_spell = userdetail.get('account_details').get('barcode_spell')
-            #         for loan_info in loandetails.values():
-            #             loan_info["user"] = username
-            #             loan_info["userid"] = user_id
-            #             loan_info["barcode"] = barcode
-            #             loan_info["barcode_spell"] = barcode_spell
-            #             libraryName = loan_info.get('library')
-            #             libraryurl = f"{userdetail.get('account_details').get('library')}/adres-en-openingsuren"
-            #             if not self._librarydetails.get(libraryName):
-            #                 _LOGGER.info(f"Calling library details {libraryName}")
-            #                 librarydetails = await self._hass.async_add_executor_job(lambda: self._session.library_details(libraryurl))
-            #                 assert librarydetails is not None
-            #                 self._librarydetails[libraryName] = librarydetails
-            #         _LOGGER.debug(f"loandetails {json.dumps(loandetails,indent=4)}") 
-            #         self._loandetails[user_id] = loandetails
-            self._loanDetailsUpdated = True
-
-
-            self._userLists = await self._hass.async_add_executor_job(lambda: self._session.user_lists())
-            assert self._userLists is not None
-            self._lastupdate = datetime.now()
+        _LOGGER.debug(f"loandetails dry_setup {json.dumps(self._coordinator.get_userDetailsAndLoansAndReservations(),indent=4)}") 
+        self._userdetails = self._coordinator.get_userdetails()
+        self._userLists = self._coordinator.get_userLists()
+        self._loandetails = self._coordinator.get_loandetails()
+        self._librarydetails = self._coordinator.get_librarydetails()
                 
     @Throttle(MIN_TIME_BETWEEN_UPDATES)
     async def _update(self):
-        await self._force_update()
+        _LOGGER.info("_update called " + NAME)
+        self._userdetails = self._coordinator.get_userdetails()
+        self._userLists = self._coordinator.get_userLists()
+        self._loandetails = self._coordinator.get_loandetails()
+        self._librarydetails = self._coordinator.get_librarydetails()
+        # await self._force_update()
 
     async def update(self):        
+        # await self._coordinator._async_local_refresh_data()
+        self._lastupdate = self._coordinator.get_lastupdate()
         state_warning_sensor = self._hass.states.get(f"sensor.{DOMAIN}_warning")
         state_warning_sensor_attributes = dict(state_warning_sensor.attributes)
         if state_warning_sensor_attributes["refresh_required"]:
             await self._force_update()
         else:
             await self._update()
-    
-    def clear_session(self):
-        self._session : None
-
 
     @property
     def unique_id(self):
