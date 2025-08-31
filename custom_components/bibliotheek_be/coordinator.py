@@ -65,8 +65,15 @@ class ComponentUpdateCoordinator(DataUpdateCoordinator):
                     libraryName = userdetail.get('account_details').get('libraryName')
                     if not self._librarydetails.get(libraryName):
                         librarydetails = await self._hass.async_add_executor_job(lambda: self._session.library_details(libraryurl))
-                        assert librarydetails is not None
+                        # assert librarydetails is not None
                         self._librarydetails[libraryName] = librarydetails
+
+                    if userdetail.get('loans'):
+                        url = userdetail.get('loans').get('url')
+                        if url:
+                            loandetails = await self._hass.async_add_executor_job(lambda: self._session.loan_details(url))
+                            # assert loandetails is not None
+                            userdetail.get('loans')['loandetails_url'] = loandetails
 
                 for loanitem in self._loandetails:
                     userLibMatchFound = False
@@ -74,12 +81,24 @@ class ComponentUpdateCoordinator(DataUpdateCoordinator):
                     item_due_date_str = loanitem.get('dueDate')
                     item_due_date = datetime.strptime(item_due_date_str, '%d/%m/%Y')
                     item_days_left = (item_due_date - today).days
+                    loanitem["loan_till"] = loanitem.get('dueDate')
                     loanitem["days_remaining"] = item_days_left
                     loanitem["extend_loan_id"] = loanitem.get("itemId")
+
 
                     for account in self._userdetails.values():
                         if account.get('account_details').get('name') == loanitem.get('accountName') and account.get('account_details').get('libraryName') == loanitem.get('location',{}).get('libraryName'):
                             userLibMatchFound = True
+                            
+                            # combine loandetail info 
+                            loandetails_url = account.get('loans',{}).get('loandetails_url',{}).get(loanitem.get('itemId',{}))
+                            if loandetails_url and loandetails_url !=  {}:
+                                loanitem["loan_type"] = loandetails_url.get("loan_type")
+                                loanitem["author"] = loandetails_url.get("author")
+                                loanitem["image_src"] = loandetails_url.get("image_src")
+                                loanitem["days_remaining"] = loandetails_url.get("days_remaining")
+                                loanitem["loan_from"] = loandetails_url.get("loan_from")
+                                loanitem["library"] = loandetails_url.get("library")
                             oldLoans = account.get('loandetails',[])
                             account['loandetails'] = oldLoans + [loanitem]
                             account.get('loans')['loans'] = len(oldLoans) + 1

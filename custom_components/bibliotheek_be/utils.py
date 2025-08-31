@@ -470,7 +470,7 @@ class ComponentSession(object):
                     extend_loan_id = ""
                 #example extension
                 # https://bibliotheek.be/mijn-bibliotheek/lidmaatschappen/1234567/uitleningen/verlengen?loan-ids=14870745%2C14871363%2C15549439%2C15707198%2C15933330%2C15938501%2C16370683%2C16490618%2C16584912%2C15468349%2C23001576%2C26583345
-                loandetails[f"{title} ~ {author}"] = {'title': title, 'author': author, 'loan_type': loan_type, 'url': url, 'image_src': image_src, 'days_remaining': days_remaining, 'loan_from': loan_from, 'loan_till': loan_till, 'extend_loan_id':extend_loan_id, 'library': libname}
+                loandetails[extend_loan_id] = {'title': title, 'author': author, 'loan_type': loan_type, 'url': url, 'image_src': image_src, 'days_remaining': days_remaining, 'loan_from': loan_from, 'loan_till': loan_till, 'extend_loan_id':extend_loan_id, 'library': libname}
         # _LOGGER.info(f"loandetails {loandetails}") 
         _LOGGER.debug(f"loandetails {json.dumps(loandetails,indent=4)}") 
         return loandetails
