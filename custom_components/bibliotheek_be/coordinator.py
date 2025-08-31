@@ -90,46 +90,14 @@ class ComponentUpdateCoordinator(DataUpdateCoordinator):
                     for account in self._userdetails.values():
                         if account.get('account_details').get('name') == loanitem.get('accountName') and account.get('account_details').get('libraryName') == loanitem.get('location',{}).get('libraryName'):
                             userLibMatchFound = True
-                            
-                            loanitem["renewUrl"] = f"{account.get('account_details',{}).get('library',{})}{loanitem.get("renewUrl","")}"
-                            loanitem["user"] = account.get('account_details').get('userName',"Unknown")
-                            loanitem["userid"] = account.get('account_details').get('id',"Unknown")
-                            loanitem["barcode"] = account.get('account_details').get('barcode',"Unknown")
-                            loanitem["barcode_spell"] = account.get('account_details').get('barcode_spell',[])
-                            # combine loandetail info 
-                            loandetails_url = account.get('loans',{}).get('loandetails_url',{}).get(loanitem.get('title',''),{})
-                            if loandetails_url and loandetails_url !=  {}:
-                                loanitem["loan_type"] = loandetails_url.get("loan_type","Unknown")
-                                loanitem["author"] = loandetails_url.get("author","Unknown")
-                                loanitem["image_src"] = loandetails_url.get("image_src", None)
-                                loanitem["days_remaining"] = loandetails_url.get("days_remaining",None)
-                                loanitem["loan_from"] = loandetails_url.get("loan_from", None)
-                                loanitem["library"] = loandetails_url.get("library","Unknown")
-                                loanitem["extend_loan_id"] = loandetails_url.get("extend_loan_id", None)
-                            else:
-                                loanitem["loan_type"] = "Unknown"
-                                loanitem["author"] = "Unknown"
-                                loanitem["image_src"] = None
-                                loanitem["days_remaining"] = None
-                                loanitem["loan_from"] = None
-                                loanitem["library"] = loanitem.get('location',{}).get('libraryName') 
-                                loanitem["extend_loan_id"] = None
-                            oldLoans = account.get('loandetails',[])
-                            account['loandetails'] = oldLoans + [loanitem]
-                            account.get('loans')['loans'] = len(oldLoans) + 1
+                            self.enrichLoanItem(loanitem, account, account.get('loandetails',[]))
                             break
                     
                     if not userLibMatchFound:
                         accountId = loanitem.get('accountId')
                         account = self._userdetails.get(accountId)
-                        loanitem["renewUrl"] = f"{account.get('account_details',{}).get('library',{})}{loanitem.get("renewUrl","")}"
-                        loanitem["user"] = account.get('account_details').get('userName',"Unknown")
-                        loanitem["userid"] = account.get('account_details').get('id',"Unknown")
-                        loanitem["barcode"] = account.get('account_details').get('barcode',"Unknown")
-                        loanitem["barcode_spell"] = account.get('account_details').get('barcode_spell',[])
                         oldLoans = self._userdetails.get(accountId).get('loandetails',[])
-                        self._userdetails.get(accountId)['loandetails'] = oldLoans + [loanitem]
-                        self._userdetails.get(accountId).get('loans')['loans'] = len(oldLoans) + 1
+                        self.enrichLoanItem(loanitem, account, oldLoans)
 
                     self._loanDetailsUpdated = True
 
@@ -141,6 +109,36 @@ class ComponentUpdateCoordinator(DataUpdateCoordinator):
             _LOGGER.error(f"{DOMAIN} ComponentUpdateCoordinator update failed, username: {self._username}", exc_info=err)
             raise UpdateFailed(f"Error fetching data: {err}")
     
+    def enrichLoanItem(self, loanitem, account, oldLoans):
+        loanitem["renewUrl"] = account.get('loans',{}).get('url',loanitem.get("renewUrl",""))
+        loanitem["accountUrl"] = f"{account.get('account_details',{}).get('library',{})}{loanitem.get("accountUrl","")}"
+        loanitem["user"] = account.get('account_details').get('userName',"Unknown")
+        loanitem["userid"] = account.get('account_details').get('id',"Unknown")
+        loanitem["barcode"] = account.get('account_details').get('barcode',"Unknown")
+        loanitem["barcode_spell"] = account.get('account_details').get('barcode_spell',[])
+        # combine loandetail info 
+        loandetails_url = account.get('loans',{}).get('loandetails_url',{}).get(loanitem.get('title',''),{})
+        if loandetails_url and loandetails_url !=  {}:
+            loanitem["loan_type"] = loandetails_url.get("loan_type","Unknown")
+            loanitem["author"] = loandetails_url.get("author","Unknown")
+            loanitem["image_src"] = loandetails_url.get("image_src", None)
+            loanitem["days_remaining"] = loandetails_url.get("days_remaining",None)
+            loanitem["loan_from"] = loandetails_url.get("loan_from", None)
+            loanitem["library"] = loandetails_url.get("library",loanitem.get('location',{}).get('libraryName') )
+            loanitem["extend_loan_id"] = loandetails_url.get("extend_loan_id", None)
+            loanitem["url"] = loandetails_url.get("url", account.get('account_details',{}).get('library',{}))
+        else:
+            loanitem["loan_type"] = "Unknown"
+            loanitem["author"] = "Unknown"
+            loanitem["image_src"] = None
+            loanitem["days_remaining"] = None
+            loanitem["loan_from"] = None
+            loanitem["library"] = loanitem.get('location',{}).get('libraryName') 
+            loanitem["extend_loan_id"] = None
+            loanitem["url"] = account.get('account_details',{}).get('library',{})
+        account['loandetails'] = oldLoans + [loanitem]
+        account.get('loans')['loans'] = len(oldLoans) + 1
+
 
     def get_userDetailsAndLoansAndReservations(self):
         return self._userDetailsAndLoansAndReservations
