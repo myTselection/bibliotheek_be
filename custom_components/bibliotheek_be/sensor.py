@@ -137,7 +137,7 @@ class ComponentData:
         
     # same as update, but without throttle to make sure init is always executed
     async def _force_update(self):
-        _LOGGER.info("Fetching update stuff for " + NAME)
+        _LOGGER.info("Forcing update stuff for " + NAME)
         await self._coordinator.async_update_data()
         
         _LOGGER.debug(f"loandetails dry_setup {json.dumps(self._coordinator.get_userDetailsAndLoansAndReservations(),indent=4)}") 
@@ -391,7 +391,7 @@ class ComponentLibrarySensor(Entity):
                 if (self._library_days_left is None) or (self._library_days_left > item_days_left):
                     _LOGGER.debug(f"library_name_loop less days {library_name_loop} {loan_item}")
                     self._library_days_left = item_days_left
-                    self._lowest_till_date = item_due_date
+                    self._lowest_till_date = loan_item.get('dueDate')
                     self._num_loans = 1
                 elif self._library_days_left == item_days_left:
                     _LOGGER.debug(f"library_name_loop same days {library_name_loop} {loan_item}")
@@ -527,7 +527,7 @@ class ComponentLibrariesWarningSensor(Entity):
             if (self._library_days_left is None) or (self._library_days_left > item_days_left):
                 _LOGGER.debug(f"library_name_loop less days {library_name_loop} {loan_item}")
                 self._library_days_left = item_days_left
-                self._lowest_till_date = item_due_date
+                self._lowest_till_date = loan_item.get('dueDate')
                 self._num_loans = 1
                 if library_name_loop not in self._library_name:
                     self._library_name += f"{shortenLibraryName(library_name_loop)} "

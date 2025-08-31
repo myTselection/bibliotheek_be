@@ -1,6 +1,7 @@
 from datetime import datetime, timedelta
 import logging
 
+
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
 from homeassistant.components.todo import TodoItem, TodoItemStatus
 
@@ -71,9 +72,9 @@ class ComponentUpdateCoordinator(DataUpdateCoordinator):
                     if userdetail.get('loans'):
                         url = userdetail.get('loans').get('url')
                         if url:
-                            loandetails = await self._hass.async_add_executor_job(lambda: self._session.loan_details(url))
+                            loandetails_url = await self._hass.async_add_executor_job(lambda: self._session.loan_details(url))
                             # assert loandetails is not None
-                            userdetail.get('loans')['loandetails_url'] = loandetails
+                            userdetail.get('loans')['loandetails_url'] = loandetails_url
 
                 for loanitem in self._loandetails:
                     userLibMatchFound = False
@@ -83,22 +84,36 @@ class ComponentUpdateCoordinator(DataUpdateCoordinator):
                     item_days_left = (item_due_date - today).days
                     loanitem["loan_till"] = loanitem.get('dueDate')
                     loanitem["days_remaining"] = item_days_left
-                    loanitem["extend_loan_id"] = loanitem.get("itemId")
+                    loanitem["url"] = loanitem.get("renewUrl")
 
 
                     for account in self._userdetails.values():
                         if account.get('account_details').get('name') == loanitem.get('accountName') and account.get('account_details').get('libraryName') == loanitem.get('location',{}).get('libraryName'):
                             userLibMatchFound = True
                             
+                            loanitem["renewUrl"] = f"{account.get('account_details',{}).get('library',{})}{loanitem.get("renewUrl","")}"
+                            loanitem["user"] = account.get('account_details').get('userName',"Unknown")
+                            loanitem["userid"] = account.get('account_details').get('id',"Unknown")
+                            loanitem["barcode"] = account.get('account_details').get('barcode',"Unknown")
+                            loanitem["barcode_spell"] = account.get('account_details').get('barcode_spell',[])
                             # combine loandetail info 
-                            loandetails_url = account.get('loans',{}).get('loandetails_url',{}).get(loanitem.get('itemId',{}))
+                            loandetails_url = account.get('loans',{}).get('loandetails_url',{}).get(loanitem.get('title',''),{})
                             if loandetails_url and loandetails_url !=  {}:
-                                loanitem["loan_type"] = loandetails_url.get("loan_type")
-                                loanitem["author"] = loandetails_url.get("author")
-                                loanitem["image_src"] = loandetails_url.get("image_src")
-                                loanitem["days_remaining"] = loandetails_url.get("days_remaining")
-                                loanitem["loan_from"] = loandetails_url.get("loan_from")
-                                loanitem["library"] = loandetails_url.get("library")
+                                loanitem["loan_type"] = loandetails_url.get("loan_type","Unknown")
+                                loanitem["author"] = loandetails_url.get("author","Unknown")
+                                loanitem["image_src"] = loandetails_url.get("image_src", None)
+                                loanitem["days_remaining"] = loandetails_url.get("days_remaining",None)
+                                loanitem["loan_from"] = loandetails_url.get("loan_from", None)
+                                loanitem["library"] = loandetails_url.get("library","Unknown")
+                                loanitem["extend_loan_id"] = loandetails_url.get("extend_loan_id", None)
+                            else:
+                                loanitem["loan_type"] = "Unknown"
+                                loanitem["author"] = "Unknown"
+                                loanitem["image_src"] = None
+                                loanitem["days_remaining"] = None
+                                loanitem["loan_from"] = None
+                                loanitem["library"] = loanitem.get('location',{}).get('libraryName') 
+                                loanitem["extend_loan_id"] = None
                             oldLoans = account.get('loandetails',[])
                             account['loandetails'] = oldLoans + [loanitem]
                             account.get('loans')['loans'] = len(oldLoans) + 1
@@ -106,33 +121,16 @@ class ComponentUpdateCoordinator(DataUpdateCoordinator):
                     
                     if not userLibMatchFound:
                         accountId = loanitem.get('accountId')
+                        account = self._userdetails.get(accountId)
+                        loanitem["renewUrl"] = f"{account.get('account_details',{}).get('library',{})}{loanitem.get("renewUrl","")}"
+                        loanitem["user"] = account.get('account_details').get('userName',"Unknown")
+                        loanitem["userid"] = account.get('account_details').get('id',"Unknown")
+                        loanitem["barcode"] = account.get('account_details').get('barcode',"Unknown")
+                        loanitem["barcode_spell"] = account.get('account_details').get('barcode_spell',[])
                         oldLoans = self._userdetails.get(accountId).get('loandetails',[])
                         self._userdetails.get(accountId)['loandetails'] = oldLoans + [loanitem]
                         self._userdetails.get(accountId).get('loans')['loans'] = len(oldLoans) + 1
 
-
-                    #     url = userdetail.get('loans').get('url')
-                    #     if url:
-                    #         _LOGGER.info(f"Calling loan details {userdetail.get('account_details').get('userName')}")
-                    #         loandetails = await self._hass.async_add_executor_job(lambda: self._session.loan_details(url))
-                    #         assert loandetails is not None
-                    #         username = userdetail.get('account_details').get('userName')
-                    #         barcode = userdetail.get('account_details').get('barcode')
-                    #         barcode_spell = userdetail.get('account_details').get('barcode_spell')
-                    #         for loan_info in loandetails.values():
-                    #             loan_info["user"] = username
-                    #             loan_info["userid"] = user_id
-                    #             loan_info["barcode"] = barcode
-                    #             loan_info["barcode_spell"] = barcode_spell
-                    #             libraryName = loan_info.get('library')
-                    #             libraryurl = f"{userdetail.get('account_details').get('library')}/adres-en-openingsuren"
-                    #             if not self._librarydetails.get(libraryName):
-                    #                 _LOGGER.info(f"Calling library details {libraryName}")
-                    #                 librarydetails = await self._hass.async_add_executor_job(lambda: self._session.library_details(libraryurl))
-                    #                 assert librarydetails is not None
-                    #                 self._librarydetails[libraryName] = librarydetails
-                    #         _LOGGER.debug(f"loandetails {json.dumps(loandetails,indent=4)}") 
-                    #         self._loandetails[user_id] = loandetails
                     self._loanDetailsUpdated = True
 
 
