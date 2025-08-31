@@ -122,6 +122,10 @@ def register_services(hass, config_entry):
         """Handle the service call."""
         extend_loan_id = call.data.get('extend_loan_id')
         max_days_remaining = call.data.get('max_days_remaining')
+        coordinator = hass.data[DOMAIN][config_entry.entry_id]["coordinator"]
+        await coordinator.async_request_refresh()
+        # await coordinator.async_request_refresh()
+
         
         config = config_entry.data
         username = config.get("username")
