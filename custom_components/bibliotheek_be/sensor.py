@@ -140,7 +140,7 @@ class ComponentData:
         _LOGGER.info("Forcing update stuff for " + NAME)
         await self._coordinator.async_update_data()
         
-        _LOGGER.debug(f"loandetails dry_setup {json.dumps(self._coordinator.get_userDetailsAndLoansAndReservations(),indent=4)}") 
+        _LOGGER.debug(f"get_userDetailsAndLoansAndReservations dry_setup {json.dumps(self._coordinator.get_userDetailsAndLoansAndReservations(),indent=4)}") 
         self._userdetails = self._coordinator.get_userdetails()
         self._userLists = self._coordinator.get_userLists()
         self._loandetails = self._coordinator.get_loandetails()
@@ -384,9 +384,10 @@ class ComponentLibrarySensor(Entity):
             if library_name_loop == self._libraryName:
                 _LOGGER.debug(f"library_name_loop {library_name_loop} {self._libraryName}") 
                 self._num_total_loans += 1
-                item_due_date_str = loan_item.get('dueDate')
-                item_due_date = datetime.strptime(item_due_date_str, '%d/%m/%Y')
-                item_days_left = (item_due_date - today).days
+                # item_due_date_str = loan_item.get('dueDate')
+                # item_due_date = datetime.strptime(item_due_date_str, '%d/%m/%Y')
+                # item_days_left = (item_due_date - today).days
+                item_days_left = loan_item.get('days_remaining')
                 self._loandetails.append(loan_item)
                 if (self._library_days_left is None) or (self._library_days_left > item_days_left):
                     _LOGGER.debug(f"library_name_loop less days {library_name_loop} {loan_item}")
@@ -520,9 +521,10 @@ class ComponentLibrariesWarningSensor(Entity):
             library_name_loop = loan_item.get('location',{}).get('libraryName')
             _LOGGER.debug(f"library_name_loop {library_name_loop}") 
             self._num_total_loans += 1
-            item_due_date_str = loan_item.get('dueDate')
-            item_due_date = datetime.strptime(item_due_date_str, '%d/%m/%Y')
-            item_days_left = (item_due_date - today).days
+            # item_due_date_str = loan_item.get('dueDate')
+            # item_due_date = datetime.strptime(item_due_date_str, '%d/%m/%Y')
+            # item_days_left = (item_due_date - today).days
+            item_days_left = loan_item.get('days_remaining')
 
             if (self._library_days_left is None) or (self._library_days_left > item_days_left):
                 _LOGGER.debug(f"library_name_loop less days {library_name_loop} {loan_item}")
