@@ -227,6 +227,9 @@ class ComponentUpdateCoordinator(DataUpdateCoordinator):
                     extend_load_ids.append(curr_extend_loan_id)
                 else:
                     _LOGGER.debug(f"skipped extension since {curr_days_remaining} below max {max_days_remaining}")
+            else:
+                _LOGGER.debug(f"library name not matching curr {library_name_loop} library_name {library_name}")
+
 
         if len(extend_load_ids) > 0:
             # processing last account

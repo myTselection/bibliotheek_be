@@ -126,6 +126,7 @@ def register_services(hass, config_entry):
         await coordinator.async_request_refresh()
         _LOGGER.info(f"handle_extend_loan extending loan {extend_loan_id}")
         await coordinator.extend_loan(extend_loan_id, max_days_remaining)
+        _LOGGER.info(f"handle_extend_loan extending loan {extend_loan_id} done")
                             
 
     async def handle_extend_loans_library(call):
@@ -136,6 +137,7 @@ def register_services(hass, config_entry):
         await coordinator.async_request_refresh()
         _LOGGER.info(f"handle_extend_loan extending loans {library_name}")
         await coordinator.extend_loans_library(library_name, max_days_remaining)
+        _LOGGER.info(f"handle_extend_loan extending loans {library_name} done")
         
 
     async def handle_extend_loans_user(call):
@@ -146,6 +148,7 @@ def register_services(hass, config_entry):
         await coordinator.async_request_refresh()
         _LOGGER.info(f"handle_extend_loan extending loans {barcode}")
         await coordinator.extend_loans_user(barcode, max_days_remaining)
+        _LOGGER.info(f"handle_extend_loan extending loans {barcode} done")
         
 
     async def handle_extend_all_loans(call):
@@ -155,6 +158,7 @@ def register_services(hass, config_entry):
         await coordinator.async_request_refresh()
         _LOGGER.info(f"handle_extend_loan extending loans all")
         await coordinator.extend_all_loans(max_days_remaining)
+        _LOGGER.info(f"handle_extend_loan extending loans all done")
         
 
     async def handle_update(call):
@@ -164,6 +168,7 @@ def register_services(hass, config_entry):
         state_warning_sensor_attributes = dict(state_warning_sensor.attributes)
         state_warning_sensor_attributes["refresh_required"] = True
         await hass.async_add_executor_job(lambda: hass.states.set(f"sensor.{DOMAIN}_warning",state_warning_sensor.state,state_warning_sensor_attributes))
+        _LOGGER.info(f"handle_update done")
 
 
     hass.services.async_register(DOMAIN, 'extend_loan', handle_extend_loan)
