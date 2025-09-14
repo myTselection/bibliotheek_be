@@ -201,7 +201,7 @@ class ComponentUpdateCoordinator(DataUpdateCoordinator):
 
 
 
-    async def handle_extend_loans_library(self, library_name, max_days_remaining):
+    async def extend_loans_library(self, library_name, max_days_remaining):
         assert self._userdetails is not None
         _LOGGER.debug(f"{NAME} handle_extend_loan login completed")
         _LOGGER.debug(f"handle_extend_loan loandetails {json.dumps(self._loandetails,indent=4)}") 
@@ -241,7 +241,7 @@ class ComponentUpdateCoordinator(DataUpdateCoordinator):
             # await self._hass.async_add_executor_job(lambda: self._hass.states.set(f"sensor.{DOMAIN}_warning",state_warning_sensor.state,state_warning_sensor_attributes))
             await self._hass.states.set(f"sensor.{DOMAIN}_warning",state_warning_sensor.state,state_warning_sensor_attributes)
 
-    async def handle_extend_loans_user(self, barcode, max_days_remaining):
+    async def extend_loans_user(self, barcode, max_days_remaining):        
         assert self._userdetails is not None
         _LOGGER.debug(f"{NAME} handle_extend_loan login completed")
         for user_id, userdetail in self._userdetails.items():
@@ -267,7 +267,7 @@ class ComponentUpdateCoordinator(DataUpdateCoordinator):
                             await self._hass.states.set(f"sensor.{DOMAIN}_warning",state_warning_sensor.state,state_warning_sensor_attributes)
                 return
 
-    async def handle_extend_all(self, max_days_remaining):
+    async def extend_all_loans(self, max_days_remaining):
         assert self._userdetails is not None
         _LOGGER.debug(f"{NAME} handle_extend_loan login completed")
         extension_confirmation = 0
