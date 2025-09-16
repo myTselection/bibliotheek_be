@@ -2,20 +2,20 @@
 
 extend_loan:
   description: >
-    Request an extention of a loan for a specific item if the days_remaining is less than or equal max_days_remaining. Please note some loans which have no extende_loan_id can not be extended.
+    Request an extension of a loan for a specific item if the days_remaining is less than or equal max_days_remaining. Please note some loans which have no extende_loan_id can not be extended.
   fields:
     extend_loan_id:
       description: >
-        The library extention id
+        The library extension id
       example: 12345678
     max_days_remaining:
       description: >
         Only extend the loan if the days remaining is below this maximum
       example: 7
-      
+
 extend_loans_library:
   description: >
-    Request an extention of a all the loans for a library for which the days_remaining is less than or equal max_days_remaining. Please note some loans which have no extende_loan_id can not be extended.
+    Request an extension of a all the loans for a library for which the days_remaining is less than or equal max_days_remaining. Please note some loans which have no extende_loan_id can not be extended.
   fields:
     library_name:
       description: >
@@ -25,10 +25,10 @@ extend_loans_library:
       description: >
         Only extend the loan if the days remaining is below this maximum
       example: 7
-      
+
 extend_loans_user:
   description: >
-    Request an extention of a all the loans for a user for which the days_remaining is less than or equal max_days_remaining. Please note some loans which have no extende_loan_id can not be extended.
+    Request an extension of a all the loans for a user for which the days_remaining is less than or equal max_days_remaining. Please note some loans which have no extende_loan_id can not be extended.
   fields:
     barcode:
       description: >
@@ -38,16 +38,16 @@ extend_loans_user:
       description: >
         Only extend the loan if the days remaining is below this maximum
       example: 7
-      
+
 extend_all_loans:
   description: >
-    Request an extention of a all the loans for all users for which the days_remaining is less than or equal max_days_remaining. Please note some loans which have no extende_loan_id can not be extended.
+    Request an extension of a all the loans for all users for which the days_remaining is less than or equal max_days_remaining. Please note some loans which have no extende_loan_id can not be extended.
   fields:
     max_days_remaining:
       description: >
         Only extend the loan if the days remaining is below this maximum
       example: 7
-      
+
 update:
   description: >
     Force an update of the sensor data (standard updates are throttled per hour).
