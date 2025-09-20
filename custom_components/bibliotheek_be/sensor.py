@@ -259,7 +259,6 @@ class ComponentUserSensor(Entity):
     async def async_will_remove_from_hass(self):
         """Clean up after entity before removal."""
         _LOGGER.info("async_will_remove_from_hass " + NAME)
-        self._data.clear_session()
 
 
     @property
@@ -406,7 +405,6 @@ class ComponentLibrarySensor(Entity):
     async def async_will_remove_from_hass(self):
         """Clean up after entity before removal."""
         _LOGGER.info("async_will_remove_from_hass " + NAME)
-        self._data.clear_session()
 
 
     @property
@@ -547,7 +545,6 @@ class ComponentLibrariesWarningSensor(Entity):
     async def async_will_remove_from_hass(self):
         """Clean up after entity before removal."""
         _LOGGER.info("async_will_remove_from_hass " + NAME)
-        self._data.clear_session()
 
 
     @property
@@ -652,7 +649,6 @@ class ComponentListSensor(Entity):
     async def async_will_remove_from_hass(self):
         """Clean up after entity before removal."""
         _LOGGER.info("async_will_remove_from_hass " + NAME)
-        self._data.clear_session()
 
 
     @property
