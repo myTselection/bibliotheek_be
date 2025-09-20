@@ -40,40 +40,40 @@ async def dry_setup(hass, config_entry, async_add_devices, coordinator):
 
     check_settings(config, hass)
     sensors = []
-    
+
     componentData = ComponentData(
         username,
         password,
         async_get_clientsession(hass),
-        hass, 
+        hass,
         coordinator
     )
 
-    
+
     await componentData._force_update()
-    _LOGGER.debug(f"userdetails dry_setup {json.dumps(componentData._userdetails,indent=4)}")     
-    _LOGGER.debug(f"loandetails dry_setup {json.dumps(componentData._loandetails,indent=4)}") 
+    _LOGGER.debug(f"userdetails dry_setup {json.dumps(componentData._userdetails,indent=4)}")
+    _LOGGER.debug(f"loandetails dry_setup {json.dumps(componentData._loandetails,indent=4)}")
     assert componentData._userdetails is not None
     assert componentData._loandetails is not None
     assert componentData._librarydetails is not None
     assert componentData._userLists is not None
-    
-    
+
+
     for userid, userdetail in componentData._userdetails.items():
         sensorUser = ComponentUserSensor(componentData, hass, userid)
         _LOGGER.debug(f"{NAME} Init sensor for user {userid}")
         sensors.append(sensorUser)
-        
+
     library_names = set()
     for loan_item in componentData._loandetails:
         libraryName = loan_item.get('location',{}).get('libraryName')
         library_names.add(libraryName)
-        
+
     for libraryName in library_names:
         sensorDate = ComponentLibrarySensor(componentData, hass, libraryName)
         _LOGGER.debug(f"{NAME} Init sensor for date {libraryName}")
         sensors.append(sensorDate)
-        
+
     sensorLibrariesWarning = ComponentLibrariesWarningSensor(componentData, hass)
     sensors.append(sensorLibrariesWarning)
 
@@ -82,7 +82,7 @@ async def dry_setup(hass, config_entry, async_add_devices, coordinator):
         _LOGGER.debug(f"{NAME} Init sensor for list {listdetails}")
         sensorList = ComponentListSensor(componentData, hass, listname, listid)
         sensors.append(sensorList)
-        
+
     async_add_devices(sensors)
 
 #TODO: sensor per library (total items loand from library), attribute: number of each type lended
@@ -114,7 +114,7 @@ async def async_remove_entry(hass, config_entry):
         _LOGGER.info("Successfully removed sensor from the integration")
     except ValueError:
         pass
-        
+
 
 
 class ComponentData:
@@ -134,18 +134,18 @@ class ComponentData:
 
         self._loanDetailsUpdated = True
 
-        
+
     # same as update, but without throttle to make sure init is always executed
     async def _force_update(self):
         _LOGGER.info("Forcing update stuff for " + NAME)
         await self._coordinator.async_update_data()
-        
-        _LOGGER.debug(f"get_userDetailsAndLoansAndReservations dry_setup {json.dumps(self._coordinator.get_userDetailsAndLoansAndReservations(),indent=4)}") 
+
+        _LOGGER.debug(f"get_userDetailsAndLoansAndReservations dry_setup {json.dumps(self._coordinator.get_userDetailsAndLoansAndReservations(),indent=4)}")
         self._userdetails = self._coordinator.get_userdetails()
         self._userLists = self._coordinator.get_userLists()
         self._loandetails = self._coordinator.get_loandetails()
         self._librarydetails = self._coordinator.get_librarydetails()
-                
+
     @Throttle(MIN_TIME_BETWEEN_UPDATES)
     async def _update(self):
         _LOGGER.info("_update called " + NAME)
@@ -155,7 +155,7 @@ class ComponentData:
         self._librarydetails = self._coordinator.get_librarydetails()
         # await self._force_update()
 
-    async def update(self):        
+    async def update(self):
         # await self._coordinator._async_local_refresh_data()
         self._lastupdate = self._coordinator.get_lastupdate()
         state_warning_sensor = self._hass.states.get(f"sensor.{DOMAIN}_warning")
@@ -174,7 +174,7 @@ class ComponentData:
         return self.unique_id
 
 def shortenLibraryName(libraryName):
-    if len(libraryName) > 20 and " - " in libraryName: 
+    if len(libraryName) > 20 and " - " in libraryName:
         new_name = libraryName.split(" - ")[1]
         return new_name
     return libraryName
@@ -186,7 +186,7 @@ class ComponentUserSensor(Entity):
         self._userid = userid
         self._last_update = None
         self._loandetails = None
-        
+
         # _LOGGER.info(f"init sensor userid {userid} _userdetails {self._data._userdetails}")
         self._num_loans = self._data._userdetails.get(self._userid).get('loans').get('loans')
         self._loans_url = self._data._userdetails.get(self._userid).get('loans').get('url')
@@ -224,11 +224,11 @@ class ComponentUserSensor(Entity):
         if not self._data._userdetails.get(self._userid).get('updated'):
             _LOGGER.debug(f"ComponentUserSensor {self._userid} not updated")
             return
-        
+
         self._data._userdetails.get(self._userid)['updated'] = False
         self._last_update =  self._data._lastupdate
         self._loandetails = None
-        
+
         self._num_loans = self._data._userdetails.get(self._userid).get('loans').get('loans')
         self._loans_url = self._data._userdetails.get(self._userid).get('loans').get('url')
         self._loans_history = self._data._userdetails.get(self._userid).get('loans').get('history')
@@ -254,8 +254,8 @@ class ComponentUserSensor(Entity):
         self._supportsOnlineRenewal = self._data._userdetails.get(self._userid).get('account_details').get('supportsOnlineRenewal')
         self._wasRecentlyAdded = self._data._userdetails.get(self._userid).get('account_details').get('wasRecentlyAdded')
         self._loandetails = self._data._userdetails.get(self._userid).get('loandetails')
-        
-        
+
+
     async def async_will_remove_from_hass(self):
         """Clean up after entity before removal."""
         _LOGGER.info("async_will_remove_from_hass " + NAME)
@@ -265,7 +265,7 @@ class ComponentUserSensor(Entity):
     def icon(self) -> str:
         """Shows the correct icon for container."""
         return "mdi:bookshelf"
-        
+
     @property
     def unique_id(self) -> str:
         """Return the name of the sensor."""
@@ -302,9 +302,9 @@ class ComponentUserSensor(Entity):
             "entity_picture": "https://raw.githubusercontent.com/myTselection/bibliotheek_be/master/icon.png",
             "name": self._name,
             "address": self._address,
-            "id": self._id, 
-            "libaryUrl": self._libraryUrl, 
-            "mail":self._mail, 
+            "id": self._id,
+            "libraryUrl": self._libraryUrl,
+            "mail":self._mail,
             "userMail": self._userMail,
             "mailNotInSync": self._mailNotInSync,
             "pendingValidationDate": self._pendingValidationDate,
@@ -312,7 +312,7 @@ class ComponentUserSensor(Entity):
             "wasRecentlyAdded": self._wasRecentlyAdded,
             "loandetails": self._loandetails
         }
-    
+
     @property
     def device_info(self) -> DeviceInfo:
         """Return the device info."""
@@ -324,7 +324,7 @@ class ComponentUserSensor(Entity):
             name=self._data.name,
             manufacturer= NAME
         )
-    
+
 
     @property
     def unit(self) -> int:
@@ -339,7 +339,7 @@ class ComponentUserSensor(Entity):
     @property
     def friendly_name(self) -> str:
         return f"{self._username} {self._libraryName}"
-        
+
 
 class ComponentLibrarySensor(Entity):
     def __init__(self, data, hass, libraryName):
@@ -355,7 +355,7 @@ class ComponentLibrarySensor(Entity):
         self._num_loans = 0
         self._num_total_loans = 0
         self._current_librarydetails = self._data._librarydetails.get(self._libraryName)
-            
+
 
     @property
     def state(self):
@@ -376,12 +376,12 @@ class ComponentLibrarySensor(Entity):
         self._some_not_extendable = False
         self._some_late = False
         self._library_days_left = None
-        
+
         today = datetime.today()
         for loan_item in self._data._loandetails:
             library_name_loop = loan_item.get('location',{}).get('libraryName')
             if library_name_loop == self._libraryName:
-                _LOGGER.debug(f"library_name_loop {library_name_loop} {self._libraryName}") 
+                _LOGGER.debug(f"library_name_loop {library_name_loop} {self._libraryName}")
                 self._num_total_loans += 1
                 # item_due_date_str = loan_item.get('dueDate')
                 # item_due_date = datetime.strptime(item_due_date_str, '%d/%m/%Y')
@@ -400,8 +400,8 @@ class ComponentLibrarySensor(Entity):
                     self._some_not_extendable = True
                 if loan_item.get('isLate') == True:
                     self._some_late = True
-        
-        
+
+
     async def async_will_remove_from_hass(self):
         """Clean up after entity before removal."""
         _LOGGER.info("async_will_remove_from_hass " + NAME)
@@ -411,7 +411,7 @@ class ComponentLibrarySensor(Entity):
     def icon(self) -> str:
         """Shows the correct icon for container."""
         return "mdi:bookshelf"
-        
+
     @property
     def unique_id(self) -> str:
         """Return the name of the sensor."""
@@ -445,7 +445,7 @@ class ComponentLibrarySensor(Entity):
             "phone": self._current_librarydetails.get('phone'),
             "email": self._current_librarydetails.get('email'),
             "opening_hours": self._current_librarydetails.get('hours'),
-            "closed_dates": self._current_librarydetails.get('closed_dates')            
+            "closed_dates": self._current_librarydetails.get('closed_dates')
         }
         return attributes
 
@@ -461,7 +461,7 @@ class ComponentLibrarySensor(Entity):
             name=self._data.name,
             manufacturer= NAME
         )
-    
+
     @property
     def unit(self) -> int:
         """Unit"""
@@ -470,7 +470,7 @@ class ComponentLibrarySensor(Entity):
     @property
     def device_class(self):
         return SensorDeviceClass.DURATION
-        
+
     @property
     def unit_of_measurement(self) -> str:
         """Return the unit of measurement this sensor expresses itself in."""
@@ -479,8 +479,8 @@ class ComponentLibrarySensor(Entity):
     @property
     def friendly_name(self) -> str:
         return f"Bib {shortenLibraryName(self._libraryName)}"
-        
-        
+
+
 class ComponentLibrariesWarningSensor(Entity):
     def __init__(self, data, hass):
         self._data = data
@@ -490,7 +490,7 @@ class ComponentLibrariesWarningSensor(Entity):
         self._library_days_left = None
         self._some_not_extendable = False
         self._some_late = False
-        self._num_loans = 0  
+        self._num_loans = 0
         self._num_total_loans = 0
         self._library_name = ""
 
@@ -512,12 +512,12 @@ class ComponentLibrariesWarningSensor(Entity):
         self._some_late = False
         self._library_name = ""
         self._library_days_left = None
-        
+
         today = datetime.today()
         for loan_item in self._data._loandetails:
             _LOGGER.debug(f"library warning loop")
             library_name_loop = loan_item.get('location',{}).get('libraryName')
-            _LOGGER.debug(f"library_name_loop {library_name_loop}") 
+            _LOGGER.debug(f"library_name_loop {library_name_loop}")
             self._num_total_loans += 1
             # item_due_date_str = loan_item.get('dueDate')
             # item_due_date = datetime.strptime(item_due_date_str, '%d/%m/%Y')
@@ -540,8 +540,8 @@ class ComponentLibrariesWarningSensor(Entity):
                 self._some_not_extendable = True
             if loan_item.get('isLate') == True:
                 self._some_late = True
-        
-        
+
+
     async def async_will_remove_from_hass(self):
         """Clean up after entity before removal."""
         _LOGGER.info("async_will_remove_from_hass " + NAME)
@@ -551,7 +551,7 @@ class ComponentLibrariesWarningSensor(Entity):
     def icon(self) -> str:
         """Shows the correct icon for container."""
         return "mdi:bookshelf"
-        
+
     @property
     def unique_id(self) -> str:
         """Return the name of the sensor."""
@@ -602,7 +602,7 @@ class ComponentLibrariesWarningSensor(Entity):
     @property
     def device_class(self):
         return SensorDeviceClass.DURATION
-        
+
     @property
     def unit_of_measurement(self) -> str:
         """Return the unit of measurement this sensor expresses itself in."""
@@ -611,7 +611,7 @@ class ComponentLibrariesWarningSensor(Entity):
     @property
     def friendly_name(self) -> str:
         return self.name
-        
+
 
 class ComponentListSensor(Entity):
     def __init__(self, data, hass, listname, listid):
@@ -639,13 +639,13 @@ class ComponentListSensor(Entity):
             return
         self._userList['updated'] = False
         self._last_update =  self._data._lastupdate
-        
+
         self._userList = self._data._userLists.get(self._listid)
         self._num_items = self._userList.get('num_items')
         self._listurl = self._userList.get('url')
         self._list_last_changed = self._userList.get('last_changed')
-        
-        
+
+
     async def async_will_remove_from_hass(self):
         """Clean up after entity before removal."""
         _LOGGER.info("async_will_remove_from_hass " + NAME)
@@ -655,7 +655,7 @@ class ComponentListSensor(Entity):
     def icon(self) -> str:
         """Shows the correct icon for container."""
         return "mdi:clipboard-list-outline"
-        
+
     @property
     def unique_id(self) -> str:
         """Return the name of the sensor."""
@@ -679,7 +679,7 @@ class ComponentListSensor(Entity):
             "list_last_changed": self._list_last_changed,
             "list_items": self._userList.get('items')
         }
-    
+
     @property
     def device_info(self) -> DeviceInfo:
         """Return the device info."""
@@ -691,7 +691,7 @@ class ComponentListSensor(Entity):
             name=self._data.name,
             manufacturer= NAME
         )
-    
+
 
     @property
     def unit(self) -> int:
