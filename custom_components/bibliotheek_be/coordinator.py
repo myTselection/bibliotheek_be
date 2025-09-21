@@ -3,7 +3,6 @@ import logging
 
 
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
-from homeassistant.components.todo import TodoItem, TodoItemStatus
 
 from homeassistant.const import (
     CONF_PASSWORD,
@@ -38,8 +37,10 @@ class MyDataUpdateCoordinator(DataUpdateCoordinator):
         self._userLists = None
         self._loandetails = None
         self._librarydetails = dict()
+        self._reservationdetails = None
 
-        
+
+
     async def _async_update_data(self):
         try:
             _LOGGER.debug(f"{DOMAIN} ComponentUpdateCoordinator update started, username: {self._username}")
@@ -103,7 +104,7 @@ class MyDataUpdateCoordinator(DataUpdateCoordinator):
                 self._userLists = await self._session.user_lists()
                 assert self._userLists is not None
                 self._last_updated = datetime.now()
-                data = {
+                self.data = {
                     "userdetails": self._userdetails,
                     "reservationdetails": self._reservationdetails,
                     "userLists": self._userLists,
@@ -113,7 +114,7 @@ class MyDataUpdateCoordinator(DataUpdateCoordinator):
                     "loanDetailsUpdated": self._loanDetailsUpdated,
                     "userDetailsAndLoansAndReservations": self._userDetailsAndLoansAndReservations
                 }
-                return data
+            return self.data
         except Exception as err:
             _LOGGER.error(f"{DOMAIN} ComponentUpdateCoordinator update failed, username: {self._username}", exc_info=err)
             raise UpdateFailed(f"Error fetching data: {err}")

@@ -125,12 +125,12 @@ class ComponentData:
 
     def update(self):
         # await self._coordinator._async_local_refresh_data()
-        self._lastupdate = self._coordinator.get_lastupdate()
-        _LOGGER.info("_update called " + NAME)
-        self._userdetails = self._coordinator.get_userdetails()
-        self._userLists = self._coordinator.get_userLists()
-        self._loandetails = self._coordinator.get_loandetails()
-        self._librarydetails = self._coordinator.get_librarydetails()
+        self._lastupdate = self._coordinator.data.get('lastupdate')
+        _LOGGER.info(f"_update called {self._lastupdate}" + NAME)
+        self._userdetails = self._coordinator.data.get('userdetails')
+        self._userLists = self._coordinator.data.get('userLists')
+        self._loandetails = self._coordinator.data.get('loandetails')
+        self._librarydetails = self._coordinator.data.get('librarydetails')
 
     @property
     def unique_id(self):
@@ -149,6 +149,9 @@ def shortenLibraryName(libraryName):
 class ComponentUserSensor(CoordinatorEntity, Entity):
     def __init__(self, data, hass, userid):
         super().__init__(data._coordinator)
+        
+        self._attr_force_update = True
+
         self._data = data
         self._hass = hass
         self._userid = userid
@@ -183,6 +186,14 @@ class ComponentUserSensor(CoordinatorEntity, Entity):
     @property
     def native_value(self):
         self._data.update()
+        # await self._coordinator._async_local_refresh_data()
+        self._lastupdate = self._data._coordinator.data.get('lastupdate')
+        _LOGGER.info(f"_update called {self._data._lastupdate}" + NAME)
+        self._userdetails = self._data._coordinator.data.get('userdetails')
+        self._userLists = self._data._coordinator.data.get('userLists')
+        self._loandetails = self._data._coordinator.data.get('loandetails')
+        self._librarydetails = self._data._coordinator.data.get('librarydetails')
+
         self._last_update =  self._data._lastupdate
         self._loandetails = None
 
