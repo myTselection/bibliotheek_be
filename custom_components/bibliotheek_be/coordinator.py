@@ -16,37 +16,31 @@ from .const import (
 )
 
 from .utils import *
+from ratelimit import limits
 
 
 _LOGGER = logging.getLogger(DOMAIN)
 
-class ComponentUpdateCoordinator(DataUpdateCoordinator):
+class MyDataUpdateCoordinator(DataUpdateCoordinator):
 
     def __init__(self, hass, config_entry, refresh_interval):
         self._config = config_entry.data
         self._username = self._config.get(CONF_USERNAME)
         self._password = self._config.get(CONF_PASSWORD)
         self._unique_user_id = f"{self._username}"
-        super().__init__(hass, _LOGGER, config_entry = config_entry, name = f"{DOMAIN} Coordinator {self._unique_user_id}", update_method=self.async_update_data, update_interval = timedelta(minutes = refresh_interval))
+        super().__init__(hass, _LOGGER, config_entry = config_entry, name = f"{DOMAIN} Coordinator {self._unique_user_id}", update_method=self._async_update_data, update_interval = timedelta(minutes = refresh_interval))
         
-        self._last_updated = None
         self._hass = hass
         self._session = ComponentSession(self._hass)
         self._userDetailsAndLoansAndReservations = None
+        self._last_updated = None
         self._userdetails = None
         self._userLists = None
         self._loandetails = None
         self._librarydetails = dict()
 
         
-
-    async def async_initialize(self):
-        await self.async_config_entry_first_refresh()
-        
-        # await self._status_store.async_load()
-        # await self.async_refresh()
-
-    async def async_update_data(self):
+    async def _async_update_data(self):
         try:
             _LOGGER.debug(f"{DOMAIN} ComponentUpdateCoordinator update started, username: {self._username}")
             if not(self._session):
@@ -108,7 +102,18 @@ class ComponentUpdateCoordinator(DataUpdateCoordinator):
                 # self._userLists = await self._hass.async_add_executor_job(lambda: self._session.user_lists())
                 self._userLists = await self._session.user_lists()
                 assert self._userLists is not None
-                self._lastupdate = datetime.now()
+                self._last_updated = datetime.now()
+                data = {
+                    "userdetails": self._userdetails,
+                    "reservationdetails": self._reservationdetails,
+                    "userLists": self._userLists,
+                    "librarydetails": self._librarydetails,
+                    "lastupdate": self._last_updated,
+                    "loandetails": self._loandetails,    
+                    "loanDetailsUpdated": self._loanDetailsUpdated,
+                    "userDetailsAndLoansAndReservations": self._userDetailsAndLoansAndReservations
+                }
+                return data
         except Exception as err:
             _LOGGER.error(f"{DOMAIN} ComponentUpdateCoordinator update failed, username: {self._username}", exc_info=err)
             raise UpdateFailed(f"Error fetching data: {err}")
@@ -160,9 +165,10 @@ class ComponentUpdateCoordinator(DataUpdateCoordinator):
         return self._librarydetails
         
     def get_lastupdate(self):
-        return self._lastupdate
+        return self._last_updated
     
 
+    @limits(calls=1, period=5)
     async def extend_loan(self, extend_loan_id, max_days_remaining):
         
         today = datetime.today()
@@ -201,6 +207,7 @@ class ComponentUpdateCoordinator(DataUpdateCoordinator):
 
 
 
+    @limits(calls=1, period=5)
     async def extend_loans_library(self, library_name, max_days_remaining):
         assert self._userdetails is not None
         _LOGGER.debug(f"{NAME} handle_extend_loan login completed")
@@ -244,6 +251,7 @@ class ComponentUpdateCoordinator(DataUpdateCoordinator):
             # await self._hass.async_add_executor_job(lambda: self._hass.states.set(f"sensor.{DOMAIN}_warning",state_warning_sensor.state,state_warning_sensor_attributes))
             await self._hass.states.set(f"sensor.{DOMAIN}_warning",state_warning_sensor.state,state_warning_sensor_attributes)
 
+    @limits(calls=1, period=5)
     async def extend_loans_user(self, barcode, max_days_remaining):        
         assert self._userdetails is not None
         _LOGGER.debug(f"{NAME} handle_extend_loan login completed")
@@ -270,6 +278,7 @@ class ComponentUpdateCoordinator(DataUpdateCoordinator):
                             await self._hass.states.set(f"sensor.{DOMAIN}_warning",state_warning_sensor.state,state_warning_sensor_attributes)
                 return
 
+    @limits(calls=1, period=5)
     async def extend_all_loans(self, max_days_remaining):
         assert self._userdetails is not None
         _LOGGER.debug(f"{NAME} handle_extend_loan login completed")
