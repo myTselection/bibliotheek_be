@@ -159,6 +159,8 @@ class ComponentData:
         # await self._coordinator._async_local_refresh_data()
         self._lastupdate = self._coordinator.get_lastupdate()
         state_warning_sensor = self._hass.states.get(f"sensor.{DOMAIN}_warning")
+        if state_warning_sensor is None:
+            await self._update()
         state_warning_sensor_attributes = dict(state_warning_sensor.attributes)
         if state_warning_sensor_attributes["refresh_required"]:
             await self._force_update()
