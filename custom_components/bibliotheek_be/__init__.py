@@ -24,7 +24,7 @@ from homeassistant.core import (
 )
 from homeassistant.exceptions import HomeAssistantError
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
-from .coordinator import ComponentUpdateCoordinator
+from .coordinator import MyDataUpdateCoordinator
 from .const import (
     CONF_REFRESH_INTERVAL
 )
@@ -93,9 +93,8 @@ async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 async def async_setup_entry(hass: HomeAssistant, config_entry: ConfigEntry) -> bool:
     """Set up component as config entry."""
     refresh_interval = config_entry.options.get(CONF_REFRESH_INTERVAL, 30)
-    # refresh_interval = 1 #DEBUG
-    coordinator = ComponentUpdateCoordinator(hass, config_entry, refresh_interval)
-    await coordinator.async_initialize() 
+    coordinator = MyDataUpdateCoordinator(hass, config_entry, refresh_interval)
+    await coordinator.async_config_entry_first_refresh()
     
     hass.data.setdefault(DOMAIN, {})[config_entry.entry_id] = {
         "coordinator": coordinator

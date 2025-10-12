@@ -10,6 +10,7 @@ from homeassistant.const import ATTR_ATTRIBUTION
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 from homeassistant.helpers.entity import Entity, DeviceInfo
 from homeassistant.util import Throttle
+from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
 from . import DOMAIN, NAME
 from .utils import *
@@ -49,8 +50,7 @@ async def dry_setup(hass, config_entry, async_add_devices, coordinator):
         coordinator
     )
 
-
-    await componentData._force_update()
+    componentData.update()
     _LOGGER.debug(f"userdetails dry_setup {json.dumps(componentData._userdetails,indent=4)}")
     _LOGGER.debug(f"loandetails dry_setup {json.dumps(componentData._loandetails,indent=4)}")
     assert componentData._userdetails is not None
@@ -61,7 +61,7 @@ async def dry_setup(hass, config_entry, async_add_devices, coordinator):
 
     for userid, userdetail in componentData._userdetails.items():
         sensorUser = ComponentUserSensor(componentData, hass, userid)
-        _LOGGER.debug(f"{NAME} Init sensor for user {userid}")
+        _LOGGER.info(f"{NAME} Init sensor for user {userid}")
         sensors.append(sensorUser)
 
     library_names = set()
@@ -71,7 +71,7 @@ async def dry_setup(hass, config_entry, async_add_devices, coordinator):
 
     for libraryName in library_names:
         sensorDate = ComponentLibrarySensor(componentData, hass, libraryName)
-        _LOGGER.debug(f"{NAME} Init sensor for date {libraryName}")
+        _LOGGER.info(f"{NAME} Init sensor for date {libraryName}")
         sensors.append(sensorDate)
 
     sensorLibrariesWarning = ComponentLibrariesWarningSensor(componentData, hass)
@@ -79,23 +79,11 @@ async def dry_setup(hass, config_entry, async_add_devices, coordinator):
 
     for listid, listdetails in componentData._userLists.items():
         listname = listdetails.get('name')
-        _LOGGER.debug(f"{NAME} Init sensor for list {listdetails}")
+        _LOGGER.info(f"{NAME} Init sensor for list {listdetails}")
         sensorList = ComponentListSensor(componentData, hass, listname, listid)
         sensors.append(sensorList)
 
     async_add_devices(sensors)
-
-#TODO: sensor per library (total items loand from library), attribute: number of each type lended
-#TODO: sensor per type of loan (eg total 5 books lended, 3 DVDs, etc)
-
-async def async_setup_platform(
-    hass, config_entry, async_add_devices, discovery_info=None
-):
-    """Setup sensor platform for the ui"""
-    _LOGGER.info("async_setup_platform " + NAME)
-    coordinator = hass.data[DOMAIN][config_entry.entry_id]["coordinator"]
-    await dry_setup(hass, config_entry, async_add_devices, coordinator)
-    return True
 
 
 async def async_setup_entry(hass, config_entry, async_add_devices):
@@ -135,37 +123,14 @@ class ComponentData:
         self._loanDetailsUpdated = True
 
 
-    # same as update, but without throttle to make sure init is always executed
-    async def _force_update(self):
-        _LOGGER.info("Forcing update stuff for " + NAME)
-        await self._coordinator.async_update_data()
-
-        _LOGGER.debug(f"get_userDetailsAndLoansAndReservations dry_setup {json.dumps(self._coordinator.get_userDetailsAndLoansAndReservations(),indent=4)}")
-        self._userdetails = self._coordinator.get_userdetails()
-        self._userLists = self._coordinator.get_userLists()
-        self._loandetails = self._coordinator.get_loandetails()
-        self._librarydetails = self._coordinator.get_librarydetails()
-
-    @Throttle(MIN_TIME_BETWEEN_UPDATES)
-    async def _update(self):
-        _LOGGER.info("_update called " + NAME)
-        self._userdetails = self._coordinator.get_userdetails()
-        self._userLists = self._coordinator.get_userLists()
-        self._loandetails = self._coordinator.get_loandetails()
-        self._librarydetails = self._coordinator.get_librarydetails()
-        # await self._force_update()
-
-    async def update(self):
+    def update(self):
         # await self._coordinator._async_local_refresh_data()
-        self._lastupdate = self._coordinator.get_lastupdate()
-        state_warning_sensor = self._hass.states.get(f"sensor.{DOMAIN}_warning")
-        if state_warning_sensor is None:
-            await self._update()
-        state_warning_sensor_attributes = dict(state_warning_sensor.attributes)
-        if state_warning_sensor_attributes["refresh_required"]:
-            await self._force_update()
-        else:
-            await self._update()
+        self._lastupdate = self._coordinator.data.get('lastupdate')
+        _LOGGER.info(f"_update called {self._lastupdate}" + NAME)
+        self._userdetails = self._coordinator.data.get('userdetails')
+        self._userLists = self._coordinator.data.get('userLists')
+        self._loandetails = self._coordinator.data.get('loandetails')
+        self._librarydetails = self._coordinator.data.get('librarydetails')
 
     @property
     def unique_id(self):
@@ -181,15 +146,17 @@ def shortenLibraryName(libraryName):
         return new_name
     return libraryName
 
-class ComponentUserSensor(Entity):
+class ComponentUserSensor(CoordinatorEntity, Entity):
     def __init__(self, data, hass, userid):
+        super().__init__(data._coordinator)
+        
+        self._attr_force_update = True
+
         self._data = data
         self._hass = hass
         self._userid = userid
         self._last_update = None
         self._loandetails = None
-
-        # _LOGGER.info(f"init sensor userid {userid} _userdetails {self._data._userdetails}")
         self._num_loans = self._data._userdetails.get(self._userid).get('loans').get('loans')
         self._loans_url = self._data._userdetails.get(self._userid).get('loans').get('url')
         self._loans_history = self._data._userdetails.get(self._userid).get('loans').get('history')
@@ -217,17 +184,16 @@ class ComponentUserSensor(Entity):
         self._loandetails = self._data._userdetails.get(self._userid).get('loandetails')
 
     @property
-    def state(self):
-        """Return the state of the sensor."""
-        return self._num_loans
+    def native_value(self):
+        self._data.update()
+        # await self._coordinator._async_local_refresh_data()
+        self._lastupdate = self._data._coordinator.data.get('lastupdate')
+        _LOGGER.info(f"_update called {self._data._lastupdate}" + NAME)
+        self._userdetails = self._data._coordinator.data.get('userdetails')
+        self._userLists = self._data._coordinator.data.get('userLists')
+        self._loandetails = self._data._coordinator.data.get('loandetails')
+        self._librarydetails = self._data._coordinator.data.get('librarydetails')
 
-    async def async_update(self):
-        await self._data.update()
-        if not self._data._userdetails.get(self._userid).get('updated'):
-            _LOGGER.debug(f"ComponentUserSensor {self._userid} not updated")
-            return
-
-        self._data._userdetails.get(self._userid)['updated'] = False
         self._last_update =  self._data._lastupdate
         self._loandetails = None
 
@@ -256,6 +222,10 @@ class ComponentUserSensor(Entity):
         self._supportsOnlineRenewal = self._data._userdetails.get(self._userid).get('account_details').get('supportsOnlineRenewal')
         self._wasRecentlyAdded = self._data._userdetails.get(self._userid).get('account_details').get('wasRecentlyAdded')
         self._loandetails = self._data._userdetails.get(self._userid).get('loandetails')
+
+        """Return the state of the sensor."""
+        return self._num_loans
+
 
 
     async def async_will_remove_from_hass(self):
@@ -343,8 +313,9 @@ class ComponentUserSensor(Entity):
         return f"{self._username} {self._libraryName}"
 
 
-class ComponentLibrarySensor(Entity):
+class ComponentLibrarySensor(CoordinatorEntity, Entity):
     def __init__(self, data, hass, libraryName):
+        super().__init__(data._coordinator)
         self._data = data
         self._hass = hass
         self._libraryName = libraryName
@@ -360,17 +331,9 @@ class ComponentLibrarySensor(Entity):
 
 
     @property
-    def state(self):
-        """Return the state of the sensor."""
-        return self._library_days_left
-
-    async def async_update(self):
-        await self._data.update()
+    def native_value(self):
+        self._data.update()
         self._current_librarydetails = self._data._librarydetails.get(self._libraryName)
-        if not self._current_librarydetails.get('updated'):
-            _LOGGER.debug(f"ComponentLibrarySensor {self._libraryName} not updated")
-            return
-        self._current_librarydetails['updated'] = False
         self._last_update =  self._data._lastupdate
         self._loandetails = []
         self._num_loans = 0
@@ -379,7 +342,6 @@ class ComponentLibrarySensor(Entity):
         self._some_late = False
         self._library_days_left = None
 
-        today = datetime.today()
         for loan_item in self._data._loandetails:
             library_name_loop = loan_item.get('location',{}).get('libraryName')
             if library_name_loop == self._libraryName:
@@ -402,6 +364,9 @@ class ComponentLibrarySensor(Entity):
                     self._some_not_extendable = True
                 if loan_item.get('isLate') == True:
                     self._some_late = True
+
+        """Return the state of the sensor."""
+        return self._library_days_left
 
 
     async def async_will_remove_from_hass(self):
@@ -483,8 +448,9 @@ class ComponentLibrarySensor(Entity):
         return f"Bib {shortenLibraryName(self._libraryName)}"
 
 
-class ComponentLibrariesWarningSensor(Entity):
+class ComponentLibrariesWarningSensor(CoordinatorEntity, Entity):
     def __init__(self, data, hass):
+        super().__init__(data._coordinator)
         self._data = data
         self._hass = hass
         self._last_update = None
@@ -497,16 +463,8 @@ class ComponentLibrariesWarningSensor(Entity):
         self._library_name = ""
 
     @property
-    def state(self):
-        """Return the state of the sensor."""
-        return self._library_days_left
-
-    async def async_update(self):
-        await self._data.update()
-        if not self._data._loanDetailsUpdated:
-            _LOGGER.debug(f"ComponentLibrariesWarningSensor not updated")
-            return
-        self._data._loanDetailsUpdated = False
+    def native_value(self):
+        self._data.update()
         self._last_update =  self._data._lastupdate
         self._num_loans = 0
         self._num_total_loans = 0
@@ -542,6 +500,9 @@ class ComponentLibrariesWarningSensor(Entity):
                 self._some_not_extendable = True
             if loan_item.get('isLate') == True:
                 self._some_late = True
+        """Return the state of the sensor."""
+        return self._library_days_left
+
 
 
     async def async_will_remove_from_hass(self):
@@ -615,8 +576,9 @@ class ComponentLibrariesWarningSensor(Entity):
         return self.name
 
 
-class ComponentListSensor(Entity):
+class ComponentListSensor(CoordinatorEntity, Entity):
     def __init__(self, data, hass, listname, listid):
+        super().__init__(data._coordinator)
         self._data = data
         self._hass = hass
         self._listname = listname
@@ -629,23 +591,16 @@ class ComponentListSensor(Entity):
         self._list_last_changed = self._userList.get('last_changed')
 
     @property
-    def state(self):
-        """Return the state of the sensor."""
-        return self._num_items
-
-    async def async_update(self):
-        await self._data.update()
-        self._userList = self._data._userLists.get(self._listid)
-        if not self._userList.get('updated'):
-            _LOGGER.debug(f"ComponentListSensor {self._listid} not updated")
-            return
-        self._userList['updated'] = False
+    def native_value(self):
+        self._data.update()
         self._last_update =  self._data._lastupdate
 
         self._userList = self._data._userLists.get(self._listid)
         self._num_items = self._userList.get('num_items')
         self._listurl = self._userList.get('url')
         self._list_last_changed = self._userList.get('last_changed')
+        """Return the state of the sensor."""
+        return self._num_items
 
 
     async def async_will_remove_from_hass(self):
