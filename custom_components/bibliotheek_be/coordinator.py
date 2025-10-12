@@ -27,7 +27,7 @@ class MyDataUpdateCoordinator(DataUpdateCoordinator):
         self._username = self._config.get(CONF_USERNAME)
         self._password = self._config.get(CONF_PASSWORD)
         self._unique_user_id = f"{self._username}"
-        super().__init__(hass, _LOGGER, config_entry = config_entry, name = f"{DOMAIN} Coordinator {self._unique_user_id}", update_method=self._async_update_data, update_interval = timedelta(minutes = refresh_interval))
+        super().__init__(hass, _LOGGER, name = f"{DOMAIN} Coordinator {self._unique_user_id}", update_method=self._async_update_data, update_interval = timedelta(minutes = max(refresh_interval, 1)))
         
         self._hass = hass
         self._session = ComponentSession(self._hass)
