@@ -491,12 +491,12 @@ class ComponentLibrariesWarningSensor(CoordinatorEntity, SensorEntity):
                 self._lowest_till_date = loan_item.get('dueDate')
                 self._num_loans = 1
                 self._some_not_extendable = loan_item.get('isRenewable')
-                if library_name_loop not in self._library_name:
+                if library_name_loop not in self._library_name and shortenLibraryName(library_name_loop) not in self._library_name:
                     self._library_name += f"{shortenLibraryName(library_name_loop)} "
             elif self._library_days_left == item_days_left:
                 _LOGGER.debug(f"library_name_loop same days {library_name_loop} {loan_item}")
                 self._num_loans += 1
-                if library_name_loop not in self._library_name:
+                if library_name_loop not in self._library_name and shortenLibraryName(library_name_loop) not in self._library_name:
                     self._library_name += f"{shortenLibraryName(library_name_loop)} "
             if loan_item.get('isRenewable') == False:
                 self._some_not_extendable = True
