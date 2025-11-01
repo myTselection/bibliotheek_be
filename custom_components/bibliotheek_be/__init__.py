@@ -92,7 +92,7 @@ async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 
 async def async_setup_entry(hass: HomeAssistant, config_entry: ConfigEntry) -> bool:
     """Set up component as config entry."""
-    refresh_interval = config_entry.options.get(CONF_REFRESH_INTERVAL, 30)
+    refresh_interval = 30
     coordinator = MyDataUpdateCoordinator(hass, config_entry, refresh_interval)
     await coordinator.async_config_entry_first_refresh()
     

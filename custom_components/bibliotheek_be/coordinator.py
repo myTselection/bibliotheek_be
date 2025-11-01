@@ -305,4 +305,4 @@ class MyDataUpdateCoordinator(DataUpdateCoordinator):
             state_warning_sensor_attributes = dict(state_warning_sensor.attributes)
             state_warning_sensor_attributes["refresh_required"] = True
             # await self._hass.async_add_executor_job(lambda: self._hass.states.set(f"sensor.{DOMAIN}_warning",state_warning_sensor.state,state_warning_sensor_attributes))
-            await self._hass.states.set(f"sensor.{DOMAIN}_warning",state_warning_sensor.state,state_warning_sensor_attributes)
+            # await self._hass.states.set(f"sensor.{DOMAIN}_warning",state_warning_sensor.state,state_warning_sensor_attributes)

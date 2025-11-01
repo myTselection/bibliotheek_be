@@ -146,7 +146,7 @@ def shortenLibraryName(libraryName):
         return new_name
     return libraryName
 
-class ComponentUserSensor(CoordinatorEntity, Entity):
+class ComponentUserSensor(CoordinatorEntity, SensorEntity):
     def __init__(self, data, hass, userid):
         super().__init__(data._coordinator)
         
@@ -313,7 +313,7 @@ class ComponentUserSensor(CoordinatorEntity, Entity):
         return f"{self._username} {self._libraryName}"
 
 
-class ComponentLibrarySensor(CoordinatorEntity, Entity):
+class ComponentLibrarySensor(CoordinatorEntity, SensorEntity):
     def __init__(self, data, hass, libraryName):
         super().__init__(data._coordinator)
         self._data = data
@@ -326,7 +326,7 @@ class ComponentLibrarySensor(CoordinatorEntity, Entity):
         self._some_late = False
         self._loandetails = []
         self._num_loans = 0
-        self._num_total_loans = 0
+        self._num_total_loans = None
         self._current_librarydetails = self._data._librarydetails.get(self._libraryName)
 
 
@@ -352,11 +352,12 @@ class ComponentLibrarySensor(CoordinatorEntity, Entity):
                 # item_days_left = (item_due_date - today).days
                 item_days_left = loan_item.get('days_remaining')
                 self._loandetails.append(loan_item)
-                if (self._library_days_left is None) or (self._library_days_left > item_days_left):
+                if (self._library_days_left is None) or (item_days_left < self._library_days_left):
                     _LOGGER.debug(f"library_name_loop less days {library_name_loop} {loan_item}")
                     self._library_days_left = item_days_left
                     self._lowest_till_date = loan_item.get('dueDate')
                     self._num_loans = 1
+                    self._some_not_extendable = loan_item.get('isRenewable')
                 elif self._library_days_left == item_days_left:
                     _LOGGER.debug(f"library_name_loop same days {library_name_loop} {loan_item}")
                     self._num_loans += 1
@@ -434,9 +435,9 @@ class ComponentLibrarySensor(CoordinatorEntity, Entity):
         """Unit"""
         return int
 
-    @property
-    def device_class(self):
-        return SensorDeviceClass.DURATION
+    # @property
+    # def device_class(self):
+    #     return SensorDeviceClass.DURATION
 
     @property
     def unit_of_measurement(self) -> str:
@@ -448,7 +449,7 @@ class ComponentLibrarySensor(CoordinatorEntity, Entity):
         return f"Bib {shortenLibraryName(self._libraryName)}"
 
 
-class ComponentLibrariesWarningSensor(CoordinatorEntity, Entity):
+class ComponentLibrariesWarningSensor(CoordinatorEntity, SensorEntity):
     def __init__(self, data, hass):
         super().__init__(data._coordinator)
         self._data = data
@@ -484,11 +485,12 @@ class ComponentLibrariesWarningSensor(CoordinatorEntity, Entity):
             # item_days_left = (item_due_date - today).days
             item_days_left = loan_item.get('days_remaining')
 
-            if (self._library_days_left is None) or (self._library_days_left > item_days_left):
-                _LOGGER.debug(f"library_name_loop less days {library_name_loop} {loan_item}")
+            if (self._library_days_left is None) or (item_days_left < self._library_days_left):
+                _LOGGER.debug(f"library_name_loop less days {library_name_loop} {loan_item} days left: {item_days_left}")
                 self._library_days_left = item_days_left
                 self._lowest_till_date = loan_item.get('dueDate')
                 self._num_loans = 1
+                self._some_not_extendable = loan_item.get('isRenewable')
                 if library_name_loop not in self._library_name:
                     self._library_name += f"{shortenLibraryName(library_name_loop)} "
             elif self._library_days_left == item_days_left:
@@ -562,9 +564,9 @@ class ComponentLibrariesWarningSensor(CoordinatorEntity, Entity):
         """Unit"""
         return int
 
-    @property
-    def device_class(self):
-        return SensorDeviceClass.DURATION
+    # @property
+    # def device_class(self):
+    #     return SensorDeviceClass.DURATION
 
     @property
     def unit_of_measurement(self) -> str:
@@ -576,7 +578,7 @@ class ComponentLibrariesWarningSensor(CoordinatorEntity, Entity):
         return self.name
 
 
-class ComponentListSensor(CoordinatorEntity, Entity):
+class ComponentListSensor(CoordinatorEntity, SensorEntity):
     def __init__(self, data, hass, listname, listid):
         super().__init__(data._coordinator)
         self._data = data
