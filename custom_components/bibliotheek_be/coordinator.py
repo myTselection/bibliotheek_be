@@ -127,8 +127,11 @@ class MyDataUpdateCoordinator(DataUpdateCoordinator):
         loanitem["barcode"] = account.get('account_details').get('barcode',"Unknown")
         loanitem["barcode_spell"] = account.get('account_details').get('barcode_spell',[])
         # combine loandetail info 
-        loandetails_url = account.get('loans',{}).get('loandetails_url',{}).get(loanitem.get('title',''),{})
+        loandetails_url = account.get('loans',{}).get('loandetails_url',{}).get(f"{loanitem.get('title','')}{loanitem.get("itemId","")}",{})
+        if loandetails_url == {}:
+            loandetails_url = account.get('loans',{}).get('loandetails_url',{}).get(f"{loanitem.get('title','')}",{})
         if loandetails_url and loandetails_url !=  {}:
+            _LOGGER.debug(f"{DOMAIN} enrichLoanItem match found: loandetails_url: {loandetails_url}, loanitem: {loanitem}")
             loanitem["loan_type"] = loandetails_url.get("loan_type","Unknown")
             loanitem["author"] = loandetails_url.get("author","Unknown")
             loanitem["image_src"] = loandetails_url.get("image_src", None)
@@ -138,6 +141,7 @@ class MyDataUpdateCoordinator(DataUpdateCoordinator):
             loanitem["extend_loan_id"] = loandetails_url.get("extend_loan_id", None)
             loanitem["url"] = loandetails_url.get("url", account.get('account_details',{}).get('library',{}))
         else:
+            _LOGGER.debug(f"{DOMAIN} enrichLoanItem no match found: loandetails_url: {loandetails_url}, loanitem: {loanitem}")
             loanitem["loan_type"] = "Unknown"
             loanitem["author"] = "Unknown"
             loanitem["image_src"] = None
