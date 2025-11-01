@@ -494,7 +494,7 @@ class ComponentSession(object):
 
         _LOGGER.debug(f"extend_multiple_ids URL {base_url}")
         
-        extend_loan_ids_url = f"{base_url}/verlengen?loan-ids="
+        extend_loan_ids_url = f"{base_url}/extend?loan-ids="
         num_id_found = 0
         
         for extend_loan_id in extend_loan_ids:
@@ -516,7 +516,7 @@ class ComponentSession(object):
         header = {"Content-Type": "application/json"}
         _LOGGER.debug(f"confirm_extension extend_loan_ids url: {url}")
         # response = await self.s.get(f"{url}",headers=header,timeout=_TIMEOUT,allow_redirects=False)
-        response = await self.s.get(f"{url}",timeout=_TIMEOUT)
+        response = await self.s.get(f"{url}",timeout=_TIMEOUT,allow_redirects=True)
         _LOGGER.debug(f"confirm_extension  result status code: {response.status_code} response: {response.text}")
         assert response.status_code == 200
         #retrieve loan extension form token to confirm extension
@@ -549,7 +549,7 @@ class ComponentSession(object):
         assert response.status_code == 200
         soup = BeautifulSoup(response.text, 'html.parser')
         
-        extend_loan_ids = f"{url}/verlengen?loan-ids="
+        extend_loan_ids = f"{url}/extend?loan-ids="
         num_id_found = 0
         
         #find all libs
@@ -590,7 +590,7 @@ class ComponentSession(object):
     
 
 
-# #manual tests - enable debug logging
+# # #manual tests - enable debug logging
 
 # _LOGGER = logging.getLogger(__name__)
 # _LOGGER.setLevel(logging.DEBUG)
@@ -598,20 +598,23 @@ class ComponentSession(object):
 #     logging.basicConfig(level=logging.DEBUG)
 # _LOGGER.debug("Debug logging is now enabled.")
 
-# session = ComponentSession()
+# hass = None
 
-# # #LOCAL TESTS
+# async def test(hass):
+#     session = ComponentSession(hass)
 
-# # _userdetails = session.login("username", "password")
-# print(_userdetails)
-# # user_lists = session.user_lists()
-# # print(user_lists)
+#     # #LOCAL TESTS
+
+#     # _userdetails = session.login("username", "password")
+#     print(_userdetails)
+#     user_lists = session.user_lists()
+#     print(user_lists)
 
 
-# for user_id, userdetail in _userdetails.items():
-#     url = userdetail.get('loans').get('url')
-#     if url:
-#         _LOGGER.info(f"Calling loan details {userdetail.get('account_details').get('userName')}")
-#         loandetails = session.loan_details(url)
-#         # print(loandetails)
+#     for user_id, userdetail in _userdetails.items():
+#         url = userdetail.get('loans').get('url')
+#         if url:
+#             _LOGGER.info(f"Calling loan details {userdetail.get('account_details').get('userName')}")
+#             loandetails = session.loan_details(url)
+#             # print(loandetails)
 
