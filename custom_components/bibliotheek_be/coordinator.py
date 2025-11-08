@@ -38,6 +38,7 @@ class MyDataUpdateCoordinator(DataUpdateCoordinator):
         self._loandetails = None
         self._librarydetails = dict()
         self._reservationdetails = None
+        self._loanDetailsUpdated = None
 
 
 
