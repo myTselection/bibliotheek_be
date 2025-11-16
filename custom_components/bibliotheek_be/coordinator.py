@@ -76,6 +76,7 @@ class MyDataUpdateCoordinator(DataUpdateCoordinator):
                             userdetail.get('loans')['loandetails_url'] = loandetails_url
 
                 for loanitem in self._loandetails:
+
                     userLibMatchFound = False
                     
                     item_due_date_str = loanitem.get('dueDate')
@@ -84,7 +85,7 @@ class MyDataUpdateCoordinator(DataUpdateCoordinator):
                     loanitem["loan_till"] = loanitem.get('dueDate')
                     loanitem["days_remaining"] = item_days_left
                     loanitem["url"] = loanitem.get("renewUrl")
-
+                    _LOGGER.debug(f"{DOMAIN} library url {loanitem.get("renewUrl")}")
 
                     for account in self._userdetails.values():
                         if account.get('account_details').get('name') == loanitem.get('accountName') and account.get('account_details').get('libraryName') == loanitem.get('location',{}).get('libraryName'):
@@ -104,6 +105,7 @@ class MyDataUpdateCoordinator(DataUpdateCoordinator):
                 # self._userLists = await self._hass.async_add_executor_job(lambda: self._session.user_lists())
                 self._userLists = await self._session.user_lists()
                 assert self._userLists is not None
+                _LOGGER.debug(f"{DOMAIN} update user lists completed {self._userLists}")
                 self._last_updated = datetime.now()
                 self.data = {
                     "userdetails": self._userdetails,
@@ -151,6 +153,9 @@ class MyDataUpdateCoordinator(DataUpdateCoordinator):
             loanitem["library"] = loanitem.get('location',{}).get('libraryName') 
             loanitem["extend_loan_id"] = None
             loanitem["url"] = account.get('account_details',{}).get('library',{})
+        
+        loanitem["libraryNameFromUrl"] = urlparse(loanitem.get("url","")).hostname.split(".")[0]
+        _LOGGER.debug(f"{DOMAIN} libraryNameFromUrl: {loanitem.get('libraryNameFromUrl')}")
         account['loandetails'] = oldLoans + [loanitem]
         account.get('loans')['loans'] = len(oldLoans) + 1
 

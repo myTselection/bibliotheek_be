@@ -2,6 +2,7 @@ import json
 import logging
 import pprint
 import re #regular expression
+from urllib.parse import urlparse
 from collections import defaultdict
 from datetime import date, datetime, timedelta
 from typing import List
@@ -36,6 +37,9 @@ def check_settings(config, hass):
     raise vol.Invalid("Missing settings to setup the sensor.")
 
 
+def extract_libraryname_from_url(url):
+    hostname = urlparse(url).hostname
+    return hostname.split(".")[0]  # first part: koksijde, beersel, ...
 
 class ComponentSession(object):
     def __init__(self, hass):
@@ -243,6 +247,10 @@ class ComponentSession(object):
         # libraryArticle = soup.find('div',class_='block block-system block-system-main-block')
         library_info = {}
         library_info['url'] = url.replace('/adres-en-openingsuren','')
+        url = library_info.get("url", "")
+        _LOGGER.debug(f"libraryNameFromUrl: {urlparse(url).hostname.split(".")[0]}")
+        libraryNameFromUrl = extract_libraryname_from_url(url)
+        library_info['libraryNameFromUrl'] = libraryNameFromUrl
         if libraryArticle is None:
             _LOGGER.error(f"No library info found, {url}") 
             return library_info
@@ -326,29 +334,27 @@ class ComponentSession(object):
         assert response.status_code == 200
         soup = BeautifulSoup(response.text, 'html.parser')
 
-        lists = soup.find_all('div', class_='my-library-lists--teaser')
+        _LOGGER.debug(f"user_lists soup: {soup}")
 
-        for item in lists:
-            # Name and URL
-            name_tag = item.find('div', class_='my-library-lists--teaser__basic-info').find('a')
-            name = name_tag.text.strip()
-            url = name_tag['href']
-            
-            # Extract ID from the URL
-            match_id = re.search(r'/lijsten/(\d+)', url)
-            list_id = match_id.group(1) if match_id else None
-            
-            # Last changed date
-            changed_info = item.find('div', class_='my-library-lists--teaser__changed-info').text.strip()
-            match_date = re.search(r'op (.+)', changed_info)
-            last_changed = match_date.group(1).strip() if match_date else 'unknown'
-            
-            # Number of items
-            show_detail_text = item.find('div', class_='my-library-lists--showdetail').text.strip()
-            match_count = re.search(r'Toon (\d+) titels', show_detail_text)
-            num_items = int(match_count.group(1)) if match_count else 0
 
-            _LOGGER.debug(f"Name: {name}, URL: {url}, Items: {num_items}, Last changed: {last_changed}")
+        # find the tag
+        tag = soup.find("item-lists-overview")
+
+        # get the JSON string from the :lists attribute
+        json_str = tag.get(":lists")
+
+        # parse the JSON
+        data = json.loads(json_str)
+
+
+        for item in data:
+            list_id = item["url"].split("/")[-1]
+            name = item["title"]
+            url = item["url"]
+            num_items = item["numberOfItems"]
+            last_changed = item["modifiedDate"]
+
+            _LOGGER.debug(f"Listname: {name}, URL: {url}, Items: {num_items}, Last changed: {last_changed}")
 
             listdetails[list_id] = {
                 'id': list_id,
@@ -361,6 +367,7 @@ class ComponentSession(object):
             response = await self.s.get(f"https://bibliotheek.be/my-library/list/{list_id}/list-items?items_per_page=300&status=1",timeout=_TIMEOUT)
             assert response.status_code == 200
             listItemDetails = response.json()
+            _LOGGER.debug(f"listItemDetails: {json.dumps(listItemDetails,indent=4)} list_id: {list_id}")
 
             # too many data elements received, eg:
                 #  'id': '123456789',
@@ -384,11 +391,20 @@ class ComponentSession(object):
             # Extract only the desired fields
             filtered_data = [
                 {
-                    'title': item.get('title'),
-                    'author': item.get('author'),
-                    'url': item.get('url')
+                    'title': item.get('title',""),
+                    'author': item.get('author',""),
+                    'url': item.get('url',""),
+                    "catalogItemId": item.get('catalogItemId',""),
+                    "cover": item.get('cover',""),
+                    "creationDateTimestamp": item.get('creationDateTimestamp',""),
+                    "format": item.get('format',""),
+                    "formatRaw": item.get('formatRaw',""),
+                    "id": item.get('id',""),
+                    "read": item.get('read',""),
+                    "wiseIds": item.get('wiseIds',"")
+
                 }
-                for item in listItemDetails.get('items', [])
+                for item in listItemDetails
             ]
             listdetails[list_id]['items'] = filtered_data
 

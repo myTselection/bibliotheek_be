@@ -53,6 +53,8 @@ async def dry_setup(hass, config_entry, async_add_devices, coordinator):
     componentData.update()
     _LOGGER.debug(f"userdetails dry_setup {json.dumps(componentData._userdetails,indent=4)}")
     _LOGGER.debug(f"loandetails dry_setup {json.dumps(componentData._loandetails,indent=4)}")
+    _LOGGER.debug(f"librarydetails dry_setup {json.dumps(componentData._librarydetails,indent=4)}")
+    _LOGGER.debug(f"userLists dry_setup {json.dumps(componentData._userLists,indent=4)}")
     assert componentData._userdetails is not None
     assert componentData._loandetails is not None
     assert componentData._librarydetails is not None
@@ -64,15 +66,27 @@ async def dry_setup(hass, config_entry, async_add_devices, coordinator):
         _LOGGER.info(f"{NAME} Init sensor for user {userid}")
         sensors.append(sensorUser)
 
-    library_names = set()
-    for loan_item in componentData._loandetails:
-        libraryName = loan_item.get('location',{}).get('libraryName')
-        library_names.add(libraryName)
+    # for libraryName in componentData._librarydetails:
+    #     sensorDate = ComponentLibrarySensor(componentData, hass, libraryName)
+    #     _LOGGER.info(f"{NAME} Init sensor for date {libraryName}")
+    #     sensors.append(sensorDate)
 
-    for libraryName in library_names:
+    for libraryName in componentData._librarydetails:
         sensorDate = ComponentLibrarySensor(componentData, hass, libraryName)
         _LOGGER.info(f"{NAME} Init sensor for date {libraryName}")
         sensors.append(sensorDate)
+
+
+
+    # library_names = set()
+    # for loan_item in componentData._loandetails:
+    #     libraryName = loan_item.get('location',{}).get('libraryName')
+    #     library_names.add(libraryName)
+
+    # for libraryName in library_names:
+    #     sensorDate = ComponentLibrarySensor(componentData, hass, libraryName)
+    #     _LOGGER.info(f"{NAME} Init sensor for date {libraryName}")
+    #     sensors.append(sensorDate)
 
     sensorLibrariesWarning = ComponentLibrariesWarningSensor(componentData, hass)
     sensors.append(sensorLibrariesWarning)
@@ -328,6 +342,7 @@ class ComponentLibrarySensor(CoordinatorEntity, SensorEntity):
         self._num_loans = 0
         self._num_total_loans = None
         self._current_librarydetails = self._data._librarydetails.get(self._libraryName)
+        self._libraryNameFromUrl = self._current_librarydetails.get("libraryNameFromUrl", None)
 
 
     @property
@@ -344,8 +359,9 @@ class ComponentLibrarySensor(CoordinatorEntity, SensorEntity):
 
         for loan_item in self._data._loandetails:
             library_name_loop = loan_item.get('location',{}).get('libraryName')
-            if library_name_loop == self._libraryName:
-                _LOGGER.debug(f"library_name_loop {library_name_loop} {self._libraryName}")
+            library_name_from_url_loop = loan_item.get('libraryNameFromUrl', None)
+            if library_name_from_url_loop == self._libraryNameFromUrl:
+                _LOGGER.debug(f"library_name_loop {library_name_loop} {self._libraryName} library_name_from_url_loop {library_name_from_url_loop}")
                 self._num_total_loans += 1
                 # item_due_date_str = loan_item.get('dueDate')
                 # item_due_date = datetime.strptime(item_due_date_str, '%d/%m/%Y')
@@ -481,6 +497,8 @@ class ComponentLibrariesWarningSensor(CoordinatorEntity, SensorEntity):
         for loan_item in self._data._loandetails:
             _LOGGER.debug(f"library warning loop")
             library_name_loop = loan_item.get('location',{}).get('libraryName')
+            library_name_from_url_loop = loan_item.get('libraryNameFromUrl', None)
+            # if library_name_from_url_loop == self._libraryNameFromUrl:
             _LOGGER.debug(f"library_name_loop {library_name_loop}")
             self._num_total_loans += 1
             # item_due_date_str = loan_item.get('dueDate')
@@ -489,7 +507,7 @@ class ComponentLibrariesWarningSensor(CoordinatorEntity, SensorEntity):
             item_days_left = loan_item.get('days_remaining')
 
             if (self._library_days_left is None) or (item_days_left < self._library_days_left):
-                _LOGGER.debug(f"library_name_loop less days {library_name_loop} {loan_item} days left: {item_days_left}")
+                _LOGGER.debug(f"library_name_loop less days {library_name_loop} {library_name_from_url_loop} {loan_item} days left: {item_days_left}")
                 self._library_days_left = item_days_left
                 self._lowest_till_date = loan_item.get('dueDate')
                 self._num_loans = 1
@@ -497,13 +515,17 @@ class ComponentLibrariesWarningSensor(CoordinatorEntity, SensorEntity):
                     self._some_not_extendable = True
                 if loan_item.get('isLate') == True:
                     self._some_late = True
-                if library_name_loop not in self._library_name and shortenLibraryName(library_name_loop) not in self._library_name:
-                    self._library_name += f"{shortenLibraryName(library_name_loop)} "
+                if library_name_from_url_loop not in self._library_name:
+                # if library_name_loop not in self._library_name and shortenLibraryName(library_name_loop) not in self._library_name:
+                    # self._library_name += f"{shortenLibraryName(library_name_loop)} "
+                    self._library_name += f"{library_name_from_url_loop} "
             elif self._library_days_left == item_days_left:
                 _LOGGER.debug(f"library_name_loop same days {library_name_loop} {loan_item}")
                 self._num_loans += 1
-                if library_name_loop not in self._library_name and shortenLibraryName(library_name_loop) not in self._library_name:
-                    self._library_name += f"{shortenLibraryName(library_name_loop)} "
+                if library_name_from_url_loop not in self._library_name:
+                # if library_name_loop not in self._library_name and shortenLibraryName(library_name_loop) not in self._library_name:
+                    # self._library_name += f"{shortenLibraryName(library_name_loop)} "
+                    self._library_name += f"{library_name_from_url_loop} "
                 if loan_item.get('isRenewable') == False:
                     self._some_not_extendable = True
                 if loan_item.get('isLate') == True:
