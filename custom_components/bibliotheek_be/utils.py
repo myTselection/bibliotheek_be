@@ -522,9 +522,9 @@ class ComponentSession(object):
         
         _LOGGER.debug(f"extend_multiple_ids extend_loan_ids: {extend_loan_ids_url}") 
         
-        if num_id_found >0 and execute:
+        if num_id_found > 0 and execute:
             _LOGGER.debug(f"extend_loan_ids url: {extend_loan_ids_url}")
-            self._confirm_extension(extend_loan_ids_url)
+            await self._confirm_extension(extend_loan_ids_url)
         _LOGGER.info(f"extend_multiple_ids done for {num_id_found} items") 
         return num_id_found        
     
@@ -532,7 +532,7 @@ class ComponentSession(object):
         header = {"Content-Type": "application/json"}
         _LOGGER.debug(f"confirm_extension extend_loan_ids url: {url}")
         # response = await self.s.get(f"{url}",headers=header,timeout=_TIMEOUT,allow_redirects=False)
-        response = await self.s.get(f"{url}",timeout=_TIMEOUT,allow_redirects=True)
+        response = await self.s.get(f"{url}",timeout=_TIMEOUT,follow_redirects=False)
         _LOGGER.debug(f"confirm_extension  result status code: {response.status_code} response: {response.text}")
         assert response.status_code == 200
         #retrieve loan extension form token to confirm extension
@@ -600,7 +600,7 @@ class ComponentSession(object):
         
         if execute and num_id_found > 0:
             _LOGGER.debug(f"extend_loan_ids url: {extend_loan_ids}")
-            self._confirm_extension(extend_loan_ids)
+            await self._confirm_extension(extend_loan_ids)
         _LOGGER.info(f"extend_all done for {num_id_found} items") 
         return num_id_found
     
