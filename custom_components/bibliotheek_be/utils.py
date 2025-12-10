@@ -63,9 +63,9 @@ class ComponentSession(object):
         oauth_location = response.headers.get('location')
         oauth_locatonurl_parsed = urlsplit(oauth_location)
         query_params = parse_qs(oauth_locatonurl_parsed.query)
-        oauth_callback_url = query_params.get('oauth_callback')
-        oauth_token = query_params.get('oauth_token')
-        hint = query_params.get('hint')
+        oauth_callback_url = query_params.get('oauth_callback', [None])[0]
+        oauth_token = query_params.get('oauth_token', [None])[0]
+        hint = query_params.get('hint', [None])[0]
         _LOGGER.debug(f"bibliotheek.be url params parsed: oauth_callback_url: {oauth_callback_url}, oauth_token: {oauth_token}, hint: {hint}")
         require_auth = True
         if (response.status_code != 302):
@@ -85,24 +85,25 @@ class ComponentSession(object):
             header["Referer"] = oauth_location
             header["Accept-Language"] = "en-US,en;q=0.9,nl;q=0.8,fr;q=0.7"
             # data = f"hint={hint}&token={oauth_token}&callback=https%3A%2F%2Fbibliotheek.be%2Fmy-library%2Flogin%2Fcallback&email={username}&password={password}"
-            data = {"hint": hint, "token": oauth_token, "callback":"https://bibliotheek.be/my-library/login/callback", "email": username, "password": password}
+            data = {"hint": hint, "token": oauth_token, "callback": "https://bibliotheek.be/my-library/login/callback", "email": username, "password": password}
             #login
             #example header response: https://bibliotheek.be/my-library/login/callback?oauth_token=*******************&oauth_verifier=**********&uilang=nl
             response = await self.s.post('https://mijn.bibliotheek.be/openbibid/rest/auth/login',headers=header,data=data,timeout=_TIMEOUT)
-            _LOGGER.debug(f"bibliotheek.be login get result status code: {response.status_code}")
-            _LOGGER.debug(f"bibliotheek.be login get header: {response.headers}")
-            _LOGGER.debug(f"bibliotheek.be login get cookies: {response.cookies}")
+            _LOGGER.debug(f"bibliotheek.be login post result status code: {response.status_code}")
+            _LOGGER.debug(f"bibliotheek.be login post header: {response.headers}")
+            _LOGGER.debug(f"bibliotheek.be login post cookies: {response.cookies}")
             _LOGGER.debug(f"bibliotheek.be login session cookies: {self.s.cookies}")
             login_location = response.headers.get('location')
-            login_locatonurl_parsed = urlsplit(login_location)
-            login_query_params = parse_qs(login_locatonurl_parsed.query)
-            oauth_verifier = login_query_params.get('oauth_verifier')
-            oauth_token = query_params.get('oauth_token')
+            login_locationurl_parsed = urlsplit(login_location)
+            login_query_params = parse_qs(login_locationurl_parsed.query)
+            oauth_verifier = login_query_params.get('oauth_verifier', [None])[0]
+            oauth_token = query_params.get('oauth_token', [None])[0]
             _LOGGER.debug(f"bibliotheek.be url params parsed: login_location: {login_location}, oauth_token: {oauth_token}, oauth_verifier: {oauth_verifier}")
             #example login_location: https://bibliotheek.be/my-library/login/callback?oauth_token=***************&oauth_verifier=*********&uilang=nl
             
             assert response.status_code in [200,303]
             if response.status_code == 303:
+            # if response.status_code in [200,303]:
                 self.s.headers["Content-Type"] = "application/x-www-form-urlencoded"
                 self.s.headers["referer"] = "https://mijn.bibliotheek.be/"
                 self.s.headers["pragma"] = "no-cache"
@@ -113,25 +114,25 @@ class ComponentSession(object):
                 #login callback based on url in location of response received
                 _LOGGER.debug(f"bibliotheek.be login session header: {self.s.headers}")
                 # response = self.s.get(login_location,headers=header,timeout=_TIMEOUT)
-                response = await self.s.get(login_location,timeout=_TIMEOUT)
+                response = await self.s.get(login_location,timeout=_TIMEOUT,follow_redirects=False)
                 login_callback_location = response.headers.get('location')
                 _LOGGER.debug(f"bibliotheek.be login callback get result status code: {response.status_code}")
                 _LOGGER.debug(f"bibliotheek.be login callback get header: {response.headers} ") #text {response.text}")
-        # assert response.status_code == 302
-        # if response.status_code == 302:        
-        #     # request access code, https://mijn.bibliotheek.be/openbibid-api.html#_authenticatie
-        #     data = {"hint": hint, "token": oauth_token, "callback":"https://bibliotheek.be/my-library/login/callback", "email": username, "password": password}
-        #     response = await self.s.post('https://mijn.bibliotheek.be/openbibid/rest/accessToken',headers=header,data=data,timeout=_TIMEOUT,allow_redirects=False)
-        #     _LOGGER.debug(f"bibliotheek.be login get result status code: {response.status_code}")
-        # else:
-        #     #login session was already available
-        #     login_callback_location = "https://bibliotheek.be/mijn-bibliotheek/lidmaatschappen"
+                # assert response.status_code == 302
+                if response.status_code == 302:        
+                    # request access code, https://mijn.bibliotheek.be/openbibid-api.html#_authenticatie
+                    data = {"hint": hint, "token": oauth_token, "callback":"https://bibliotheek.be/my-library/login/callback", "email": username, "password": password}
+                    response = await self.s.post('https://mijn.bibliotheek.be/openbibid/rest/accessToken',headers=header,data=data,timeout=_TIMEOUT,follow_redirects=True)
+                    _LOGGER.debug(f"bibliotheek.be login get result status code: {response.status_code}")
+                else:
+                    #login session was already available
+                    login_callback_location = "https://bibliotheek.be/mijn-bibliotheek/lidmaatschappen"
 
 
         login_callback_location = "https://bibliotheek.be/mijn-bibliotheek/lidmaatschappen"
         #lidmaatschap based on url in location of response received
         # response = await self.s.get(f"{login_callback_location}",headers=header,timeout=_TIMEOUT)
-        response = await self.s.get(f"{login_callback_location}",timeout=_TIMEOUT)
+        response = await self.s.get(f"{login_callback_location}",timeout=_TIMEOUT,follow_redirects=False)
         _LOGGER.debug(f"bibliotheek.be lidmaatschap get result status code: {response.status_code}") # response: {response.text}")
         _LOGGER.debug(f"bibliotheek.be lidmaatschap get header: {response.headers}")
         # _LOGGER.debug(f"bibliotheek.be lidmaatschap get text: {response.text}")
@@ -148,24 +149,40 @@ class ComponentSession(object):
         # https://bibliotheek.be/my-library-user/messages-count
         # https://bibliotheek.be/my-library-user/unconfirmed-memberships-count
 
-        responseMemberships = await self.s.get(f"https://bibliotheek.be/api/my-library/memberships",timeout=_TIMEOUT)
+        responseMemberships = await self.s.get(f"https://bibliotheek.be/api/my-library/memberships",timeout=_TIMEOUT,follow_redirects=True)
         assert responseMemberships.status_code == 200
+        _LOGGER.debug(f"bibliotheek.be memberships get result status code: {responseMemberships.status_code}, response: {responseMemberships.text}")
         memberships = responseMemberships.json()
 
         
         libraryDetails = {}
 
-        for library_name, accounts in memberships.items():
+        for library_region_name, libraryRegionType in memberships.items():
+            _LOGGER.debug(f"bibliotheek.be lidmaatschap library: {library_region_name}, libraryRegionType: {libraryRegionType}")
+            libraryAccounts = libraryRegionType.get("library",libraryRegionType.get("region",None))
+            if isinstance(libraryAccounts, dict):
+                accounts = []
+                for barcode, account in libraryAccounts.items():
+                    accounts.extend(account)
+            else:
+                accounts = libraryAccounts
+
+
             for account in accounts:
+                _LOGGER.debug(f"bibliotheek.be lidmaatschap account: {account}")
                 if not account.get("hasError", True) and account.get("id"):
-                    responseActivities = await self.s.get(f"https://bibliotheek.be/api/my-library/{account['id']}/activities",timeout=_TIMEOUT)
-                    assert responseActivities.status_code == 200
-                    activities = responseActivities.json()
                     
                     account['barcode_spell'] = self.count_repeated_numbers(account.get('barcode',''))
                     account['userName'] = account.get('name','')
-                    account['libraryName'] = library_name
-                    libraryDetails[library_name] = account.get('library','')
+                    libraryUrl = account.get('library','')
+                    libraryname_from_url = urlparse(libraryUrl).hostname.split(".")[0]
+                    account['libraryName'] = libraryname_from_url
+                    libraryDetails[libraryname_from_url] = account.get('library','')
+
+                    
+                    responseActivities = await self.s.get(f"https://bibliotheek.be/api/my-library/{account['id']}/activities",timeout=_TIMEOUT,follow_redirects=True)
+                    assert responseActivities.status_code == 200
+                    activities = responseActivities.json()
                    
                     # Final data structure
                     self.userdetails[account.get('id')] = {
@@ -190,16 +207,18 @@ class ComponentSession(object):
         # _LOGGER.debug(f"self.userdetails {json.dumps(self.userdetails,indent=4)}")
 
         
-        responseLoans = await self.s.get(f"https://bibliotheek.be/my-library-overview-loans",timeout=_TIMEOUT)
+        responseLoans = await self.s.get(f"https://bibliotheek.be/my-library-overview-loans",timeout=_TIMEOUT,follow_redirects=True)
         assert responseLoans.status_code == 200
         loandetails = responseLoans.json()
+        _LOGGER.debug(f"loandetails my-library-overview-loans: {json.dumps(loandetails,indent=4)}")
 
         
-        responseReservations = await self.s.get(f"https://bibliotheek.be/my-library-overview-reservations",timeout=_TIMEOUT)
+        responseReservations = await self.s.get(f"https://bibliotheek.be/my-library-overview-reservations",timeout=_TIMEOUT,follow_redirects=True)
         assert responseReservations.status_code == 200
         reservations = responseReservations.json()
+        _LOGGER.debug(f"reservations my-library-overview-reservations: {json.dumps(reservations,indent=4)}")
         userdetailsAndLoans = {'userdetails': self.userdetails, 'loandetails': loandetails, 'reservationdetails': reservations, 'librarydetails': libraryDetails}
-        # _LOGGER.debug(f"userdetailsAndLoans: {json.dumps(userdetailsAndLoans,indent=4)}")
+        _LOGGER.debug(f"userdetailsAndLoans: {json.dumps(userdetailsAndLoans,indent=4)}")
 
         return userdetailsAndLoans
         
@@ -233,7 +252,7 @@ class ComponentSession(object):
 
         #lidmaatschap based on url in location of response received
         # response = await self.s.get(f"{url}",headers=header,timeout=_TIMEOUT)
-        response = await self.s.get(f"{url}",timeout=_TIMEOUT)
+        response = await self.s.get(f"{url}",timeout=_TIMEOUT,follow_redirects=True)
         library_details_response_header = response.headers
         _LOGGER.debug(f"bibliotheek.be library get result status code: {response.status_code}") #response: {response.text}")
         _LOGGER.debug(f"bibliotheek.be library get header: {response.headers}")
@@ -241,7 +260,7 @@ class ComponentSession(object):
         login_location = response.headers.get('location')
         if login_location is not None:
             _LOGGER.debug(f"Following redirection: {login_location}")
-            response = await self.s.get(login_location,timeout=_TIMEOUT)
+            response = await self.s.get(login_location,timeout=_TIMEOUT,follow_redirects=True)
         soup = BeautifulSoup(response.text, 'html.parser')
         libraryArticle = soup.find('article',class_='library library--page-item')
         # libraryArticle = soup.find('div',class_='block block-system block-system-main-block')
@@ -330,7 +349,7 @@ class ComponentSession(object):
         listdetails = dict()
         _LOGGER.debug(f"user_lists")
 
-        response = await self.s.get(f"https://bibliotheek.be/mijn-bibliotheek/lijsten",timeout=_TIMEOUT)
+        response = await self.s.get(f"https://bibliotheek.be/mijn-bibliotheek/lijsten",timeout=_TIMEOUT,follow_redirects=True)
         assert response.status_code == 200
         soup = BeautifulSoup(response.text, 'html.parser')
 
@@ -364,7 +383,7 @@ class ComponentSession(object):
                 'last_changed': last_changed,
                 'updated': True
             }
-            response = await self.s.get(f"https://bibliotheek.be/my-library/list/{list_id}/list-items?items_per_page=300&status=1",timeout=_TIMEOUT)
+            response = await self.s.get(f"https://bibliotheek.be/my-library/list/{list_id}/list-items?items_per_page=300&status=1",timeout=_TIMEOUT,follow_redirects=True)
             assert response.status_code == 200
             listItemDetails = response.json()
             _LOGGER.debug(f"listItemDetails: {json.dumps(listItemDetails,indent=4)} list_id: {list_id}")
@@ -426,11 +445,11 @@ class ComponentSession(object):
 
         #lidmaatschap based on url in location of response received
         # response = await self.s.get(f"{url}",headers=header,timeout=_TIMEOUT)
-        response = await self.s.get(f"{url}",timeout=_TIMEOUT)
+        response = await self.s.get(f"{url}",timeout=_TIMEOUT,follow_redirects=True)
         login_location = response.headers.get('location')
         if login_location is not None:
             _LOGGER.debug(f"Following redirection: {login_location}")
-            response = await self.s.get(login_location,timeout=_TIMEOUT)
+            response = await self.s.get(login_location,timeout=_TIMEOUT,follow_redirects=True)
         loan_details_response_header = response.headers
         _LOGGER.debug(f"bibliotheek.be lidmaatschap get result status code: {response.status_code}") # response: {response.text}")
         _LOGGER.debug(f"bibliotheek.be lidmaatschap get header: {response.headers}")
