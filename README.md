@@ -294,7 +294,7 @@ content: >-
 
     - Uitstaande boetes: {{state_attr(user,'open_amounts') }}
       {% if state_attr(user,'num_loans') > 0 %}
-      {% set all_books = state_attr(user,'loandetails')  |sort(attribute="days_remaining", reverse=False)%}
+      {% set all_books = state_attr(user,'loandetails') %}
     - In totaal <a href="{{state_attr(user,'loans_url')}}" target="_blank">{{state_attr(user,'num_loans') }}</a> uitgeleend{% if all_books %}
         {% for book in all_books %}
         - <details><summary>{% if book.isRenewable %}{{ strptime(book.dueDate, "%d/%m/%Y").strftime("%a %d/%m/%Y") }}{% else %}<b>{{ strptime(book.dueDate, "%d/%m/%Y").strftime("%a %d/%m/%Y") }}</b>{% endif %}: {{ book.title }}</summary>
