@@ -175,8 +175,9 @@ class ComponentSession(object):
                     account['barcode_spell'] = self.count_repeated_numbers(account.get('barcode',''))
                     account['userName'] = account.get('name','')
                     libraryUrl = account.get('library','')
+                    account['libraryLongName'] = account.get('libraryName','')
                     libraryname_from_url = urlparse(libraryUrl).hostname.split(".")[0]
-                    account['libraryName'] = libraryname_from_url
+                    account['libraryName'] = f"{libraryname_from_url}".title()
                     libraryDetails[libraryname_from_url] = account.get('library','')
 
                     
