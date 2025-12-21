@@ -292,7 +292,9 @@ content: >-
   selectattr("entity_id","match","^sensor.bibliotheek_be_*") |
   rejectattr("entity_id","match","^sensor.bibliotheek_be_bib*")|
   rejectattr("entity_id","match","^sensor.bibliotheek_be_list*")|
-  rejectattr("entity_id","match","^sensor.bibliotheek_be_warning")| list%}
+  rejectattr("entity_id","match","^sensor.bibliotheek_be_warning")|
+  sort(attribute="state")|
+   list%}
 
   {% for user_device in library_users %}
 
@@ -313,8 +315,9 @@ content: >-
   target="_blank">{{state_attr(user,'num_reservations') }}</a></li>
   <li>Uitstaande boetes: {{state_attr(user,'open_amounts') }}</li> {% if
   state_attr(user,'num_loans') > 0 %} {% set all_books =
-  state_attr(user,'loandetails')  | list|sort(attribute="days_remaining",
-  reverse=False) %} <li>In totaal <a href="{{state_attr(user,'loans_url')}}"
+  state_attr(user,'loandetails') | sort(attribute="isRenewable",
+  reverse=False) | sort(attribute="days_remaining",
+  reverse=False)  |list %} <li>In totaal <a href="{{state_attr(user,'loans_url')}}"
   target="_blank">{{state_attr(user,'num_loans') }}</a> uitgeleend{% if
   all_books %} {% for book in all_books %}
 
@@ -361,7 +364,6 @@ content: >-
 
   {% endfor %}
 title: Gebruikers
-
 
 
 ```
