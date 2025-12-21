@@ -552,9 +552,9 @@ class ComponentSession(object):
         header = {"Content-Type": "application/json"}
         _LOGGER.debug(f"confirm_extension extend_loan_ids url: {url}")
         # response = await self.s.get(f"{url}",headers=header,timeout=_TIMEOUT,allow_redirects=False)
-        response = await self.s.get(f"{url}",timeout=_TIMEOUT,follow_redirects=False)
+        response = await self.s.get(f"{url}",timeout=_TIMEOUT,follow_redirects=True)
         _LOGGER.debug(f"confirm_extension  result status code: {response.status_code} response: {response.text}")
-        assert response.status_code == 200
+        # assert response.status_code == 200
         #retrieve loan extension form token to confirm extension
         soup = BeautifulSoup(response.text, 'html.parser')
         div = soup.find('form', class_='my-library-extend-loan-form')
