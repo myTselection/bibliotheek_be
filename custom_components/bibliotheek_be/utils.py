@@ -544,29 +544,31 @@ class ComponentSession(object):
         
         if num_id_found > 0 and execute:
             _LOGGER.debug(f"extend_loan_ids url: {extend_loan_ids_url}")
-            await self._confirm_extension(extend_loan_ids_url)
+            await self._confirm_extension(extend_loan_ids_url, base_url)
         _LOGGER.info(f"extend_multiple_ids done for {num_id_found} items") 
         return num_id_found        
     
-    async def _confirm_extension(self,url):
+    async def _confirm_extension(self,url, base_url):
         header = {"Content-Type": "application/json"}
-        _LOGGER.debug(f"confirm_extension extend_loan_ids url: {url}")
+        _LOGGER.debug(f"confirm_extension extend_loan_ids url: {url}, base_url {base_url}")
         # response = await self.s.get(f"{url}",headers=header,timeout=_TIMEOUT,allow_redirects=False)
         response = await self.s.get(f"{url}",timeout=_TIMEOUT,follow_redirects=True)
         _LOGGER.debug(f"confirm_extension  result status code: {response.status_code} response: {response.text}")
+        response = await self.s.get(f"{base_url}",timeout=_TIMEOUT,follow_redirects=True)
+        _LOGGER.debug(f"confirm_extension  base_url result status code: {response.status_code} response: {response.text}")
         # assert response.status_code == 200
         #retrieve loan extension form token to confirm extension
-        soup = BeautifulSoup(response.text, 'html.parser')
-        div = soup.find('form', class_='my-library-extend-loan-form')
-        _LOGGER.debug(f"div my-library-extend-loan-form: {div}")
-        if div:
-            input_fields = soup.find_all('input')
-            data = {input_field.get('name'): input_field.get('value') for input_field in input_fields}
-            header = {"Content-Type": "application/x-www-form-urlencoded"}
-            _LOGGER.debug(f"confirm_extensionextend_loan_ids confirm data: {data} url: {url}")
-            response = await self.s.post(f"{url}",headers=header,data=data,timeout=_TIMEOUT)
-            _LOGGER.debug(f"confirm_extension confirmation result status code: {response.status_code} response: {response.text}")
-            # assert response.status_code == 200
+        # soup = BeautifulSoup(response.text, 'html.parser')
+        # div = soup.find('form', class_='my-library-extend-loan-form')
+        # _LOGGER.debug(f"div my-library-extend-loan-form: {div}")
+        # if div:
+        #     input_fields = soup.find_all('input')
+        #     data = {input_field.get('name'): input_field.get('value') for input_field in input_fields}
+        #     header = {"Content-Type": "application/x-www-form-urlencoded"}
+        #     _LOGGER.debug(f"confirm_extensionextend_loan_ids confirm data: {data} url: {url}")
+        #     response = await self.s.post(f"{url}",headers=header,data=data,timeout=_TIMEOUT)
+        #     _LOGGER.debug(f"confirm_extension confirmation result status code: {response.status_code} response: {response.text}")
+        #     # assert response.status_code == 200
     
 
 
@@ -620,7 +622,7 @@ class ComponentSession(object):
         
         if execute and num_id_found > 0:
             _LOGGER.debug(f"extend_loan_ids url: {extend_loan_ids}")
-            await self._confirm_extension(extend_loan_ids)
+            await self._confirm_extension(extend_loan_ids, url)
         _LOGGER.info(f"extend_all done for {num_id_found} items") 
         return num_id_found
     
