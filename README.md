@@ -198,7 +198,7 @@ content: >-
 
   {% set libraries = states |
   selectattr("entity_id","match","^sensor.bibliotheek_be_bib*") |
-  rejectattr("state", "match","unavailable") |sort(attribute="state")|
+  rejectattr("state", "match","unavailable") |sort(attribute="state", reverse=True)|
   sort(attribute="attributes.some_not_extendable", reverse=True)| list %}
 
   {% for library_device in libraries %}
