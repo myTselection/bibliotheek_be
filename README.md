@@ -204,7 +204,7 @@ content: >-
   {% for library_device in libraries %}
     {% set library = library_device.entity_id %}
     ## Bib {{state_attr(library,'libraryName') }}:
-    {% set all_books = state_attr(library,'loandetails')| list |sort(attribute="days_remaining", reverse=False) %}
+    {% set all_books = state_attr(library,'loandetails')| sort(attribute="isRenewable", reverse=False) | sort(attribute="days_remaining", reverse=False)  | list %}
     {% if all_books %}
 
     - {{state_attr(library,"num_loans") }} stuk{% if state_attr(library,'num_loans')|int > 1 %}s{% endif %} {%if state_attr(library,'some_not_extendable')%}**in te leveren** binnen{% else %}te verlengen in{% endif %} **{{states(library)}}** dag{% if states(library)|int > 1 %}en{% endif %}: {{strptime(state_attr(library,'lowest_till_date'), "%d/%m/%Y").strftime("%a %d/%m/%Y") }}
