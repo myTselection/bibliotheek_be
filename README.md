@@ -19,7 +19,7 @@ By using the custom services available in this integration, the lendings can be 
 | :warning: Please don't report issues with this integration to Bibliotheek.be, they will not be able to support you. |
 | ------------------------------------------------------------------------------------------------------------------- |
 
-<p align="center"><img src="https://raw.githubusercontent.com/myTselection/bibliotheek_be/master/icon.png"/></p>
+<p align="center"><img src="https://raw.githubusercontent.com/myTselection/bibliotheek_be/master/icon_small.png"/></p>
 
 ## Installation
 
@@ -186,9 +186,9 @@ All other files just contain boilerplate code for the integration to work within
 type: markdown
 content: >-
   [<img
-  src="https://raw.githubusercontent.com/myTselection/bibliotheek_be/master/icon.png"
+  src="https://raw.githubusercontent.com/myTselection/bibliotheek_be/master/icon_small_transp.png"
   style="max-width: 10%; height:
-  auto;!important;">](https:/bibliotheek.be)
+  auto;!important;">](https://beersel.bibliotheek.be)
 
   {% if state_attr('sensor.bibliotheek_be_warning','refresh_required') %}
 
@@ -196,10 +196,26 @@ content: >-
 
   {% endif %}
 
-  {% set libraries = states |
-  selectattr("entity_id","match","^sensor.bibliotheek_be_bib*") |
-  rejectattr("state", "match","unavailable") |sort(attribute="state", reverse=True)|
-  sort(attribute="attributes.some_not_extendable", reverse=True)| list %}
+  {% set libs = states
+    | selectattr("entity_id","match","^sensor.bibliotheek_be_bib*")
+    | rejectattr("state", "match","unavailable")
+    | list %}
+
+  {% set numeric = libs
+    | rejectattr("state","eq","unknown")
+    | list %}
+
+  {% set unknown = libs
+    | selectattr("state","eq","unknown")
+    | list %}
+
+  {# 1. Sort by numeric state (ascending) #} {% set numeric = numeric |
+  sort(attribute="state") %}
+
+  {# 2. Bring non-extendable (true) to the top #} {% set numeric = numeric |
+  sort(attribute="attributes.some_not_extendable", reverse=true) %}
+
+  {# 3. Combine — unknown always last #} {% set libraries = numeric + unknown %}
 
   {% for library_device in libraries %}
     {% set library = library_device.entity_id %}
@@ -211,29 +227,24 @@ content: >-
 
   <details><summary>Toon details:</summary>
 
-  {% for book in all_books  %} 
-  <details>
-  
-  <summary>{% if book.extend_loan_id %}{{
-  strptime(book.loan_till, "%d/%m/%Y").strftime("%a %d/%m/%Y") }}{% else %}<b>{{
-  strptime(book.loan_till, "%d/%m/%Y").strftime("%a %d/%m/%Y") }}</b>{% endif
-  %}: {{ book.title}}{% if book.author != "-" %} ~ {{ book.author }}{% endif
-  %}</summary> 
-  <ul>
-  <li>Binnen: {{ book.days_remaining }} dagen</li>
-  <li>Verlenging: {% if book.extend_loan_id %}<a
-  href="https://{{state_attr(library,'libraryName')
+  {% for book in all_books  %}  <details>
+
+  <summary>{% if book.extend_loan_id %}{{ strptime(book.loan_till,
+  "%d/%m/%Y").strftime("%a %d/%m/%Y") }}{% else %}<b>{{ strptime(book.loan_till,
+  "%d/%m/%Y").strftime("%a %d/%m/%Y") }}</b>{% endif %}: {{ book.title}}{% if
+  book.author != "-" %} ~ {{ book.author }}{% endif %}</summary>  <ul>
+  <li>Binnen: {{ book.days_remaining }} dagen</li> <li>Verlenging: {% if
+  book.extend_loan_id %}<a href="https://{{state_attr(library,'libraryName')
   }}.bibliotheek.be/mijn-bibliotheek/lidmaatschappen/{{book.userid}}/uitleningen/verlengen?loan-ids={{book.extend_loan_id}}"
-  target="_blank">verlengbaar</a>{% else %}<b>Niet verlengbaar</b>{% endif %}</li>
-  <li>Bibliotheek: <a href="{{book.url}}" target="_blank">{{book.library}}</a></li>
-  <li>Gebruiker: <a href="https://barcodeapi.org/api/128/{{book.barcode}}">{{book.user}} ({{book.barcode}})</a></li>
-  <li>Type: {% if book.loan_type == 'Unknown' %}Onbekend{% else %}{{book.loan_type}}{%
-  endif %}</li>
-  <br/><a href="{{book.url}}"><img src="{{ book.image_src }}" height="100"/></a>
-  </ul>
-  
-  </details>
-  {% endfor %} 
+  target="_blank">verlengbaar</a>{% else %}<b>Niet verlengbaar</b>{% endif
+  %}</li> <li>Bibliotheek: <a href="{{book.url}}"
+  target="_blank">{{book.library}}</a></li> <li>Gebruiker: <a
+  href="https://barcodeapi.org/api/128/{{book.barcode}}">{{book.user}}
+  ({{book.barcode}})</a></li> <li>Type: {% if book.loan_type == 'Unknown'
+  %}Onbekend{% else %}{{book.loan_type}}{% endif %}</li> <br/><a
+  href="{{book.url}}"><img src="{{ book.image_src }}" height="100"/></a> </ul>
+
+  </details> {% endfor %} 
       
   </details>
     {% endif %}
@@ -275,7 +286,6 @@ content: >-
     
   Automatische verlenging van boeken die binnen 5 dagen moeten ingeleverd
   worden.
-
 
 ```
 
