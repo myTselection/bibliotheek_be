@@ -267,8 +267,60 @@ content: >-
         - Email: {{state_attr(library,'email')}}
         - Openingsuren: 
            {% if state_attr(library,'opening_hours') %}
-           {% for key,value in state_attr(library,'opening_hours').items() %}
-           - {{key}}: {{value | join(', ')}}{% if not value %}Gesloten{% endif %}
+           
+           {# --- compute which day to bold (server-side) --- #}
+           {% set days = ['maandag','dinsdag','woensdag','donderdag','vrijdag','zaterdag','zondag'] %}
+           {% set oh = state_attr(library,'opening_hours') %}
+           {% set ns = namespace(bold=None) %}
+           {# current server time (Home Assistant server timezone) #}
+           {% set now_dt = now() %}
+           {% set now_t = now_dt.time() %}
+
+           {# iterate up to 7 days starting from today #}
+           {% for offset in range(0,7) %}
+             {% set idx = (now_dt.weekday() + offset) % 7 %}
+             {% set day = days[idx] %}
+             {% set intervals = [] %}
+             {% if oh and day in oh %}
+               {% set intervals = oh[day] %}
+             {% endif %}
+             {% if intervals | length > 0 %}
+               {% if offset == 0 %}
+                 {# check if now inside any interval today #}
+                 {% for intr in intervals %}
+                   {% set parts = intr.split('-') %}
+                   {% set st = parts[0].strip() %}
+                   {% set en = parts[1].strip() %}
+                   {% if now_t >= strptime(st, "%H:%M").time() and now_t < strptime(en, "%H:%M").time() %}
+                     {% set ns.bold = day %}
+                     {% break %}
+                   {% endif %}
+                 {% endfor %}
+                 {% if ns.bold is not none %}
+                   {% break %}
+                 {% endif %}
+                 {# check if there is a later interval today #}
+                 {% for intr in intervals %}
+                   {% set st = intr.split('-')[0].strip() %}
+                   {% if now_t < strptime(st, "%H:%M").time() %}
+                     {% set ns.bold = day %}
+                     {% break %}
+                   {% endif %}
+                 {% endfor %}
+                 {% if ns.bold is not none %}
+                   {% break %}
+                 {% endif %}
+               {% else %}
+                 {# first future day with intervals -> bold it #}
+                 {% set ns.bold = day %}
+                 {% break %}
+               {% endif %}
+             {% endif %}
+           {% endfor %}
+
+           {# render openings, bolding ns.bold if set #}
+           {% for key,value in oh.items() %}
+           - {% if key == ns.bold %}**{{key}}**{% else %}{{key}}{% endif %}: {% if value %}{{ value | join(', ') }}{% else %}Gesloten{% endif %}
            {% endfor %}
            {% endif %}
         - Sluitingsdagen: 
