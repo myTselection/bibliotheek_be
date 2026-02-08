@@ -469,27 +469,27 @@ title: Lijsten
 The example below will create a binary sensor that will turn on if items have to be returned within 7 days. The alert sensor will be turned on if items have to be returned within 7 days and no extension is possible for some or all.
 `configuration.yaml`:
 
-<details><summary>Click to show the binary sensor configuration example</summary>
+<details><summary>Click to show the binary sensor `configuration.yaml` example</summary>
 
 ```
-binary_sensor:
-  - platform: template
-    sensors:
-      bibliotheek_warning_7d:
-        friendly_name: Bibliotheek Warning 7d
-        value_template: >
-           {{states('sensor.bibliotheek_be_warning')|int <= 7}}
-  - platform: template
-    sensors:
-      bibliotheek_alert_7d:
-        friendly_name: Bibliotheek Alert 7d
-        value_template: >
-           {{states('sensor.bibliotheek_be_warning')|int <= 7 and state_attr('sensor.bibliotheek_be_warning','some_not_extendable') == True}}
+template:
+  - binary_sensor:
+      - unique_id: bibliotheek_warning_7d
+        name: Bibliotheek Warning 7d
+        icon: mdi:bookshelf
+        state: >
+           {{states('sensor.bibliotheek_be_warning')|int(0) <= 7}}
+  - binary_sensor:
+      - unique_id: bibliotheek_alert_7d
+        name: Bibliotheek Alert 7d
+        icon: mdi:bookshelf
+        state: >
+           {{states('sensor.bibliotheek_be_warning')|int(0) <= 7 and state_attr('sensor.bibliotheek_be_warning','some_not_extendable') == True}}
 ```
 
 </details>
 
-Base on these sensors, a automation can be build for notifications or below conditional card can be defined:
+Based on these sensors, an automation can be build for notifications or below conditional card can be defined:
 
 <details><summary>Click to show the lovelace card example</summary>
 
@@ -518,7 +518,7 @@ card:
 
 ### Example automation
 
-Example automation that will automatically extend all items that have 7 or less days left before they need to be returned, whenever the days left is is below 6.
+Example automation that will **automatically extend all item**s that have 7 or less days left before they need to be returned, whenever the days left is is below 6.
 
 ```
 alias: Bibliotheek extend all verlengingen
@@ -534,7 +534,7 @@ action:
       max_days_remaining: 7
   - service: notify.notify
     data:
-      message: Al de boeken die konden verlengd worden, werden verlengd.
+      message: Al de boeken die konden verlengd worden en zouden vervallen binnen 7 dagen, werden verlengd.
 mode: single
 ```
 
