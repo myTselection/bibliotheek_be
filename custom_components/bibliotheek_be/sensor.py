@@ -19,7 +19,7 @@ from homeassistant.const import (
     CONF_USERNAME
 )
 
-_LOGGER = logging.getLogger(__name__)
+_LOGGER = logging.getLogger(DOMAIN)
 _DATETIME_FORMAT = "%Y-%m-%dT%H:%M:%S.0%z"
 
 

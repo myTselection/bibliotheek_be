@@ -18,7 +18,10 @@ from collections import OrderedDict
 import voluptuous as vol
 # from homeassistant.helpers.aiohttp_client import async_get_clientsession
 
-_LOGGER = logging.getLogger(__name__)
+from .const import (
+    DOMAIN,
+)
+_LOGGER = logging.getLogger(DOMAIN)
 
 _DATETIME_FORMAT = "%Y-%m-%dT%H:%M:%S.0%z"
 _TIMEOUT = 30
