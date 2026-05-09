@@ -26,7 +26,8 @@ from homeassistant.exceptions import HomeAssistantError
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 from .coordinator import MyDataUpdateCoordinator
 from .const import (
-    CONF_REFRESH_INTERVAL
+    CONF_REFRESH_INTERVAL,
+    DOMAIN,
 )
 # manifestfile = Path(__file__).parent / 'manifest.json'
 # with open(manifestfile, 'r') as json_file:
@@ -51,7 +52,7 @@ This is a custom component
 )
 
 
-_LOGGER = logging.getLogger(__name__)
+_LOGGER = logging.getLogger(DOMAIN)
 
 
 # async def async_setup(hass: HomeAssistant, config: ConfigType):

@@ -18,7 +18,10 @@ from collections import OrderedDict
 import voluptuous as vol
 # from homeassistant.helpers.aiohttp_client import async_get_clientsession
 
-_LOGGER = logging.getLogger(__name__)
+from .const import (
+    DOMAIN,
+)
+_LOGGER = logging.getLogger(DOMAIN)
 
 _DATETIME_FORMAT = "%Y-%m-%dT%H:%M:%S.0%z"
 _TIMEOUT = 30
@@ -154,9 +157,13 @@ class ComponentSession(object):
         _LOGGER.debug(f"bibliotheek.be memberships get result status code: {responseMemberships.status_code}, response: {responseMemberships.text}")
         memberships = responseMemberships.json()
 
-        
         libraryDetails = {}
 
+        # Handle case where memberships can be an empty list or a dictionary
+        if isinstance(memberships, list):
+            _LOGGER.debug("Memberships is a list (likely empty), no accounts to process")
+            memberships = {}
+        
         for library_region_name, libraryRegionType in memberships.items():
             _LOGGER.debug(f"bibliotheek.be lidmaatschap library: {library_region_name}, libraryRegionType: {libraryRegionType}")
             libraryAccounts = libraryRegionType.get("library",libraryRegionType.get("region",None))

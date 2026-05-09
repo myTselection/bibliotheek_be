@@ -14,7 +14,7 @@ An overview of all items per library or an overview of all items per user can be
 
 Based on the sensors, automations can be built to get warned: eg when little time is left to return an item and considering item extension in the library is not more possible.
 
-By using the custom services available in this integration, the lendings can be extended automatically, which can be integrated in automations. For example: auto extend lending for all items which are to be returned within 5 days. Full info below.
+By using the custom services available in this integration, the **lendings can be automatically extended**, which can be integrated in automations. For example: auto extend lending for all items which are to be returned within 5 days. Full info below.
 
 | :warning: Please don't report issues with this integration to Bibliotheek.be, they will not be able to support you. |
 | ------------------------------------------------------------------------------------------------------------------- |
@@ -267,8 +267,60 @@ content: >-
         - Email: {{state_attr(library,'email')}}
         - Openingsuren: 
            {% if state_attr(library,'opening_hours') %}
-           {% for key,value in state_attr(library,'opening_hours').items() %}
-           - {{key}}: {{value | join(', ')}}{% if not value %}Gesloten{% endif %}
+           
+           {# --- compute which day to bold (server-side) --- #}
+           {% set days = ['maandag','dinsdag','woensdag','donderdag','vrijdag','zaterdag','zondag'] %}
+           {% set oh = state_attr(library,'opening_hours') %}
+           {% set ns = namespace(bold=None) %}
+           {# current server time (Home Assistant server timezone) #}
+           {% set now_dt = now() %}
+           {% set now_t = now_dt.time() %}
+
+           {# iterate up to 7 days starting from today #}
+           {% for offset in range(0,7) %}
+             {% set idx = (now_dt.weekday() + offset) % 7 %}
+             {% set day = days[idx] %}
+             {% set intervals = [] %}
+             {% if oh and day in oh %}
+               {% set intervals = oh[day] %}
+             {% endif %}
+             {% if intervals | length > 0 %}
+               {% if offset == 0 %}
+                 {# check if now inside any interval today #}
+                 {% for intr in intervals %}
+                   {% set parts = intr.split('-') %}
+                   {% set st = parts[0].strip() %}
+                   {% set en = parts[1].strip() %}
+                   {% if now_t >= strptime(st, "%H:%M").time() and now_t < strptime(en, "%H:%M").time() %}
+                     {% set ns.bold = day %}
+                     {% break %}
+                   {% endif %}
+                 {% endfor %}
+                 {% if ns.bold is not none %}
+                   {% break %}
+                 {% endif %}
+                 {# check if there is a later interval today #}
+                 {% for intr in intervals %}
+                   {% set st = intr.split('-')[0].strip() %}
+                   {% if now_t < strptime(st, "%H:%M").time() %}
+                     {% set ns.bold = day %}
+                     {% break %}
+                   {% endif %}
+                 {% endfor %}
+                 {% if ns.bold is not none %}
+                   {% break %}
+                 {% endif %}
+               {% else %}
+                 {# first future day with intervals -> bold it #}
+                 {% set ns.bold = day %}
+                 {% break %}
+               {% endif %}
+             {% endif %}
+           {% endfor %}
+
+           {# render openings, bolding ns.bold if set #}
+           {% for key,value in oh.items() %}
+           - {% if key == ns.bold %}**{{key}}**{% else %}{{key}}{% endif %}: {% if value %}{{ value | join(', ') }}{% else %}Gesloten{% endif %}
            {% endfor %}
            {% endif %}
         - Sluitingsdagen: 
@@ -315,8 +367,8 @@ content: >-
   <details><summary><b>{{state_attr(user,'username') }}
   {{state_attr(user,'libraryName') }}:</b></summary> <ul> <li>Kaart
   {{state_attr(user,'barcode') }} ({{state_attr(user,'barcode_spell')| join(',
-  ') }}):
-      [<img src="{{state_attr(user,'barcode_url') }}" height=100></img>]({{state_attr(user,'barcode_url') }})</li>
+  ') }}):<br/>
+      <a href="{{state_attr(user,'barcode_url') }}"><img src="{{state_attr(user,'barcode_url') }}" height=100></img></a></li>
   <li>Account vervalt {{state_attr(user,'expirationDate')}}{% if
   state_attr(user,'isExpired') %} Vervallen{% endif %}{% if
   state_attr(user,'isBlocked') %} Geblokkeerd{% endif %}{% if
@@ -325,9 +377,9 @@ content: >-
   target="_blank">{{state_attr(user,'num_reservations') }}</a></li>
   <li>Uitstaande boetes: {{state_attr(user,'open_amounts') }}</li> {% if
   state_attr(user,'num_loans') > 0 %} {% set all_books =
-  state_attr(user,'loandetails') | sort(attribute="isRenewable",
-  reverse=False) | sort(attribute="days_remaining",
-  reverse=False)  |list %} <li>In totaal <a href="{{state_attr(user,'loans_url')}}"
+  state_attr(user,'loandetails') | sort(attribute="isRenewable", reverse=False)
+  | sort(attribute="days_remaining", reverse=False)  |list %} <li>In totaal <a
+  href="{{state_attr(user,'loans_url')}}"
   target="_blank">{{state_attr(user,'num_loans') }}</a> uitgeleend{% if
   all_books %} {% for book in all_books %}
 
@@ -358,8 +410,8 @@ content: >-
   <details><summary><b>{{state_attr(user,'username') }}
   {{state_attr(user,'libraryName') }}:</b></summary> <ul> <li>Kaart
   {{state_attr(user,'barcode') }} ({{state_attr(user,'barcode_spell')| join(',
-  ') }}):
-      [<img src="{{state_attr(user,'barcode_url') }}" height=100></img>]({{state_attr(user,'barcode_url') }})</li>
+  ') }}):<br/>
+      <a href="{{state_attr(user,'barcode_url') }}"><img src="{{state_attr(user,'barcode_url') }}" height=100></img></a></li>
   <li>Account vervalt {{state_attr(user,'expirationDate')}}{% if
   state_attr(user,'isExpired') %} Vervallen{% endif %}{% if
   state_attr(user,'isBlocked') %} Geblokkeerd{% endif %}{% if
@@ -417,27 +469,27 @@ title: Lijsten
 The example below will create a binary sensor that will turn on if items have to be returned within 7 days. The alert sensor will be turned on if items have to be returned within 7 days and no extension is possible for some or all.
 `configuration.yaml`:
 
-<details><summary>Click to show the binary sensor configuration example</summary>
+<details><summary>Click to show the binary sensor `configuration.yaml` example</summary>
 
 ```
-binary_sensor:
-  - platform: template
-    sensors:
-      bibliotheek_warning_7d:
-        friendly_name: Bibliotheek Warning 7d
-        value_template: >
-           {{states('sensor.bibliotheek_be_warning')|int <= 7}}
-  - platform: template
-    sensors:
-      bibliotheek_alert_7d:
-        friendly_name: Bibliotheek Alert 7d
-        value_template: >
-           {{states('sensor.bibliotheek_be_warning')|int <= 7 and state_attr('sensor.bibliotheek_be_warning','some_not_extendable') == True}}
+template:
+  - binary_sensor:
+      - unique_id: bibliotheek_warning_7d
+        name: Bibliotheek Warning 7d
+        icon: mdi:bookshelf
+        state: >
+           {{states('sensor.bibliotheek_be_warning')|int(0) <= 7}}
+  - binary_sensor:
+      - unique_id: bibliotheek_alert_7d
+        name: Bibliotheek Alert 7d
+        icon: mdi:bookshelf
+        state: >
+           {{states('sensor.bibliotheek_be_warning')|int(0) <= 7 and state_attr('sensor.bibliotheek_be_warning','some_not_extendable') == True}}
 ```
 
 </details>
 
-Base on these sensors, a automation can be build for notifications or below conditional card can be defined:
+Based on these sensors, an automation can be build for notifications or below conditional card can be defined:
 
 <details><summary>Click to show the lovelace card example</summary>
 
@@ -466,7 +518,7 @@ card:
 
 ### Example automation
 
-Example automation that will automatically extend all items that have 7 or less days left before they need to be returned, whenever the days left is is below 6.
+Example automation that will **automatically extend all item**s that have 7 or less days left before they need to be returned, whenever the days left is is below 6.
 
 ```
 alias: Bibliotheek extend all verlengingen
@@ -482,7 +534,7 @@ action:
       max_days_remaining: 7
   - service: notify.notify
     data:
-      message: Al de boeken die konden verlengd worden, werden verlengd.
+      message: Al de boeken die konden verlengd worden en zouden vervallen binnen 7 dagen, werden verlengd.
 mode: single
 ```
 
