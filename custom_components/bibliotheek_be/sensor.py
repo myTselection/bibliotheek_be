@@ -9,7 +9,7 @@ from homeassistant.components.sensor import PLATFORM_SCHEMA, SensorEntity, Senso
 from homeassistant.const import ATTR_ATTRIBUTION
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 from homeassistant.helpers.entity import Entity, DeviceInfo
-from homeassistant.util import Throttle
+from homeassistant.util import Throttle, slugify
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
 from . import DOMAIN, NAME
@@ -160,7 +160,12 @@ def shortenLibraryName(libraryName):
         return new_name
     return libraryName
 
+def legacy_entity_id(name):
+    return f"sensor.{slugify(name)}"
+
 class ComponentUserSensor(CoordinatorEntity, SensorEntity):
+    _attr_has_entity_name = False
+
     def __init__(self, data, hass, userid):
         super().__init__(data._coordinator)
         
@@ -196,6 +201,7 @@ class ComponentUserSensor(CoordinatorEntity, SensorEntity):
         self._supportsOnlineRenewal = self._data._userdetails.get(self._userid).get('account_details').get('supportsOnlineRenewal')
         self._wasRecentlyAdded = self._data._userdetails.get(self._userid).get('account_details').get('wasRecentlyAdded')
         self._loandetails = self._data._userdetails.get(self._userid).get('loandetails')
+        self.entity_id = legacy_entity_id(self.unique_id)
 
     @property
     def native_value(self):
@@ -328,6 +334,8 @@ class ComponentUserSensor(CoordinatorEntity, SensorEntity):
 
 
 class ComponentLibrarySensor(CoordinatorEntity, SensorEntity):
+    _attr_has_entity_name = False
+
     def __init__(self, data, hass, libraryName):
         super().__init__(data._coordinator)
         self._data = data
@@ -343,6 +351,7 @@ class ComponentLibrarySensor(CoordinatorEntity, SensorEntity):
         self._num_total_loans = None
         self._current_librarydetails = self._data._librarydetails.get(self._libraryName)
         self._libraryNameFromUrl = self._current_librarydetails.get("libraryNameFromUrl", None)
+        self.entity_id = legacy_entity_id(self.unique_id)
 
 
     @property
@@ -469,6 +478,8 @@ class ComponentLibrarySensor(CoordinatorEntity, SensorEntity):
 
 
 class ComponentLibrariesWarningSensor(CoordinatorEntity, SensorEntity):
+    _attr_has_entity_name = False
+
     def __init__(self, data, hass):
         super().__init__(data._coordinator)
         self._data = data
@@ -481,6 +492,7 @@ class ComponentLibrariesWarningSensor(CoordinatorEntity, SensorEntity):
         self._num_loans = 0
         self._num_total_loans = 0
         self._library_name = ""
+        self.entity_id = legacy_entity_id(self.unique_id)
 
     @property
     def native_value(self):
@@ -607,6 +619,8 @@ class ComponentLibrariesWarningSensor(CoordinatorEntity, SensorEntity):
 
 
 class ComponentListSensor(CoordinatorEntity, SensorEntity):
+    _attr_has_entity_name = False
+
     def __init__(self, data, hass, listname, listid):
         super().__init__(data._coordinator)
         self._data = data
@@ -619,6 +633,7 @@ class ComponentListSensor(CoordinatorEntity, SensorEntity):
         self._num_items = self._userList.get('num_items')
         self._listurl = self._userList.get('url')
         self._list_last_changed = self._userList.get('last_changed')
+        self.entity_id = legacy_entity_id(self.unique_id)
 
     @property
     def native_value(self):
