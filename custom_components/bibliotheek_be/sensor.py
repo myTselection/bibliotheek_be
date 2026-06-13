@@ -1,6 +1,8 @@
 import logging
 import asyncio
+import base64
 from datetime import date, datetime, timedelta
+from io import BytesIO
 import random
 
 import homeassistant.helpers.config_validation as cv
@@ -32,6 +34,37 @@ PLATFORM_SCHEMA = PLATFORM_SCHEMA.extend(
 
 MIN_TIME_BETWEEN_UPDATES = timedelta(minutes=120 + random.uniform(10, 20))
 # MIN_TIME_BETWEEN_UPDATES = timedelta(minutes=1 + random.uniform(1, 2))
+
+
+def generate_barcode_url(barcode_value):
+    """Generate a local Code128 barcode image as an SVG data URL."""
+    if barcode_value is None:
+        return None
+
+    barcode_value = str(barcode_value).strip()
+    if not barcode_value or barcode_value.lower() == "unknown":
+        return None
+
+    try:
+        from barcode import Code128
+        from barcode.writer import SVGWriter
+
+        output = BytesIO()
+        Code128(barcode_value, writer=SVGWriter()).write(
+            output,
+            {
+                "module_height": 18.0,
+                "module_width": 0.35,
+                "quiet_zone": 4.0,
+                "font_size": 10,
+                "text_distance": 3.0,
+            },
+        )
+        encoded_svg = base64.b64encode(output.getvalue()).decode("ascii")
+        return f"data:image/svg+xml;base64,{encoded_svg}"
+    except Exception:
+        _LOGGER.warning("Unable to generate local barcode image", exc_info=True)
+        return None
 
 
 async def dry_setup(hass, config_entry, async_add_devices, coordinator):
@@ -183,6 +216,7 @@ class ComponentUserSensor(CoordinatorEntity, SensorEntity):
         self._reservations_url = self._data._userdetails.get(self._userid).get('reservations').get('url')
         self._open_amounts = self._data._userdetails.get(self._userid).get('open_amounts').get('open_amounts')
         self._barcode = self._data._userdetails.get(self._userid).get('account_details').get('barcode')
+        self._barcode_url = generate_barcode_url(self._barcode)
         self._barcode_spell = self._data._userdetails.get(self._userid).get('account_details').get('barcode_spell')
         self._username = self._data._userdetails.get(self._userid).get('account_details').get('userName')
         self._libraryName = shortenLibraryName(self._data._userdetails.get(self._userid).get('account_details').get('libraryName'))
@@ -224,6 +258,7 @@ class ComponentUserSensor(CoordinatorEntity, SensorEntity):
         self._reservations_url = self._data._userdetails.get(self._userid).get('reservations').get('url')
         self._open_amounts = self._data._userdetails.get(self._userid).get('open_amounts').get('open_amounts')
         self._barcode = self._data._userdetails.get(self._userid).get('account_details').get('barcode')
+        self._barcode_url = generate_barcode_url(self._barcode)
         self._barcode_spell = self._data._userdetails.get(self._userid).get('account_details').get('barcode_spell')
         self._username = self._data._userdetails.get(self._userid).get('account_details').get('userName')
         self._libraryName = shortenLibraryName(self._data._userdetails.get(self._userid).get('account_details').get('libraryName'))
@@ -278,7 +313,7 @@ class ComponentUserSensor(CoordinatorEntity, SensorEntity):
             "userid": self._userid,
             "barcode": self._barcode,
             "barcode_spell": self._barcode_spell,
-            "barcode_url": f"https://barcodeapi.org/api/128/{self._barcode}",
+            "barcode_url": self._barcode_url,
             "num_loans": self._num_loans,
             "loans_url": self._loans_url,
             "loans_history": self._loans_history,
