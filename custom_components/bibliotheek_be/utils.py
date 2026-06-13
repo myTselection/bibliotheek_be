@@ -2,7 +2,7 @@ import json
 import logging
 import pprint
 import re #regular expression
-from urllib.parse import urlparse
+from urllib.parse import quote_plus, urlparse
 from collections import defaultdict
 from datetime import date, datetime, timedelta
 from typing import List
@@ -43,6 +43,18 @@ def check_settings(config, hass):
 def extract_libraryname_from_url(url):
     hostname = urlparse(url).hostname
     return hostname.split(".")[0]  # first part: koksijde, beersel, ...
+
+def _normalize_library_label(label):
+    label = (label or "").casefold()
+    for prefix in (
+        "hoofdbibliotheek ",
+        "bibliotheekpunt ",
+        "bibliotheek ",
+        "hoofdbib ",
+        "wijkbib ",
+    ):
+        label = label.replace(prefix, "")
+    return re.sub(r"[^a-z0-9]+", "", label)
 
 class ComponentSession(object):
     def __init__(self, hass):
@@ -252,8 +264,147 @@ class ComponentSession(object):
             counts.append(current_char)
 
         return counts
-    
-    async def library_details(self, url):
+
+    async def library_autocomplete(self, library_slug):
+        """Fetch known sub-libraries for a main library slug."""
+        response = await self.s.get(
+            f"https://bibliotheek.be/library-search/autocomplete?q={quote_plus(library_slug)}",
+            timeout=_TIMEOUT,
+            follow_redirects=True,
+        )
+        if response.status_code != 200:
+            _LOGGER.warning(
+                "bibliotheek.be autocomplete failed for %s: %s",
+                library_slug,
+                response.status_code,
+            )
+            return []
+
+        sub_libraries = []
+        for item in response.json():
+            try:
+                value = json.loads(item.get("value", "{}"))
+            except (TypeError, json.JSONDecodeError):
+                value = {}
+
+            label = value.get("label") or item.get("label")
+            sub_libraries.append(
+                {
+                    "id": value.get("id") or item.get("value"),
+                    "label": label,
+                    "display_label": item.get("label") or label,
+                }
+            )
+
+        return sub_libraries
+
+    def _find_library_article(self, soup, selected_library):
+        if not selected_library:
+            return soup.find("article", class_="library library--page-item") or soup.find(
+                class_="library--contact-block-item"
+            )
+
+        selected_label = selected_library.get("label")
+        normalized_selected_label = _normalize_library_label(selected_label)
+
+        for article in soup.find_all("article", class_="library library--page-item"):
+            heading = article.find("h2")
+            heading_label = heading.get_text(" ", strip=True) if heading else ""
+            if normalized_selected_label == _normalize_library_label(heading_label):
+                return article
+
+        for tab in soup.select(".library--contact-block-item__tab a"):
+            heading = tab.find("h3")
+            href = tab.get("href", "")
+            if not heading or not href.startswith("#"):
+                continue
+
+            heading_label = heading.get_text(" ", strip=True)
+            if normalized_selected_label != _normalize_library_label(heading_label):
+                continue
+
+            return soup.find(id=href[1:])
+
+        return soup.find("article", class_="library library--page-item") or soup.find(
+            class_="library--contact-block-item"
+        )
+
+    def _parse_opening_hours(self, library_article):
+        hours = {}
+        for dl in library_article.find_all("dl", class_="library__date-open"):
+            for dt in dl.find_all("dt"):
+                day = dt.get_text(" ", strip=True)
+                dd = dt.find_next_sibling("dd")
+                if not day or dd is None:
+                    continue
+
+                times = [time.get_text(" ", strip=True) for time in dd.select(".timespan time")]
+                if not times and "gesloten" in dd.get_text(" ", strip=True).casefold():
+                    times = ["Gesloten"]
+                hours[day] = times
+
+        return hours
+
+    def _parse_address(self, library_article):
+        address_element = library_article.find("div", class_="library__pane--address--address")
+        if address_element:
+            return address_element.get_text(" ", strip=True).replace("Adres", "").replace(
+                "Toon op kaart", ""
+            ).strip()
+
+        for details in library_article.find_all("div", class_="library__details"):
+            title = details.find("h4")
+            if title and title.get_text(" ", strip=True).casefold() == "adres":
+                address_items = []
+                address_list = details.find("ul", recursive=False)
+                if address_list:
+                    for item in address_list.find_all("li", recursive=False):
+                        if item.find("a"):
+                            continue
+                        address_items.append(item.get_text(" ", strip=True))
+                if address_items:
+                    return " ".join(address_items)
+
+                return details.get_text(" ", strip=True).replace("Adres", "").replace(
+                    "Toon op kaart", ""
+                ).strip()
+
+        return None
+
+    def _parse_gps(self, library_article):
+        gps_element = library_article.find("div", class_="library__pane--address-address--gps")
+        if gps_element:
+            gps_text = gps_element.get_text(" ", strip=True).replace("Gps", "")
+            gps_match = re.search(r"([0-9.]+)\s*°?NB\s*([0-9.]+)\s*°?OL", gps_text)
+            if gps_match:
+                return gps_match.group(1), gps_match.group(2)
+
+        gps_element = library_article.find("div", class_="library__gps-info")
+        if gps_element:
+            gps_match = re.search(r"([0-9.]+)\s*,\s*([0-9.]+)", gps_element.get_text(" ", strip=True))
+            if gps_match:
+                return gps_match.group(1), gps_match.group(2)
+
+        return None, None
+
+    def _parse_phone(self, library_article):
+        phone_element = library_article.find("a", class_="tel")
+        if phone_element:
+            return phone_element.get_text(" ", strip=True)
+
+        contact_title = library_article.find(
+            lambda tag: tag.name == "h4"
+            and tag.get_text(" ", strip=True).casefold() == "contactgegevens"
+        )
+        if contact_title:
+            for item in contact_title.find_parent("div").find_all("li"):
+                item_text = item.get_text(" ", strip=True)
+                if re.search(r"\d", item_text) and "[at]" not in item_text:
+                    return item_text
+
+        return None
+
+    async def library_details(self, url, selected_library=None):
         header = {"Content-Type": "application/json"}
 
         _LOGGER.debug(f"library details URL {url}")
@@ -270,7 +421,7 @@ class ComponentSession(object):
             _LOGGER.debug(f"Following redirection: {login_location}")
             response = await self.s.get(login_location,timeout=_TIMEOUT,follow_redirects=True)
         soup = BeautifulSoup(response.text, 'html.parser')
-        libraryArticle = soup.find('article',class_='library library--page-item')
+        libraryArticle = self._find_library_article(soup, selected_library)
         # libraryArticle = soup.find('div',class_='block block-system block-system-main-block')
         library_info = {}
         library_info['url'] = url.replace('/adres-en-openingsuren','')
@@ -281,34 +432,26 @@ class ComponentSession(object):
         if libraryArticle is None:
             _LOGGER.error(f"No library info found, {url}") 
             return library_info
+        if selected_library:
+            library_info["selected_library"] = selected_library
+            library_info["selected_library_label"] = selected_library.get("label")
+            library_info["selected_library_id"] = selected_library.get("id")
         # library_info['name'] = libraryArticle.find('a', class_='.library--page-item').text.strip()
 
-        hours = {}
-        for dl in libraryArticle.find_all('dl',class_='library__date-open'):
-            day = dl.dt.text.strip()
-            times = []
-            for span in dl.select('.timespan time'):
-                times.append(span.text.strip())
-            hours[day] = times
-        library_info['hours'] = hours
+        library_info['hours'] = self._parse_opening_hours(libraryArticle)
 
-        gps_element = libraryArticle.find('div',class_='library__pane--address-address--gps')
-        if gps_element:
-            gps_element = gps_element.text.replace('\n', ' ').replace('\u00b0','').replace('Gps','').strip()
-            gps_element = gps_element.strip().split('NB')
-            lat = gps_element[0]
-            lon = gps_element[1].strip().split('OL')[0]
+        lat, lon = self._parse_gps(libraryArticle)
+        if lat and lon:
             library_info['lat'] = lat
             library_info['lon'] = lon
-            _LOGGER.debug(f"gps {gps_element} lat {lat} lon {lon}")
 
-        address_element = libraryArticle.find('div',class_='library__pane--address--address')
-        if address_element:
-            library_info['address'] = address_element.text.replace('\n', ' ').replace('Adres','').replace('Toon op kaart','').strip().replace('         ',',')
+        address = self._parse_address(libraryArticle)
+        if address:
+            library_info['address'] = address
 
-        phone_element = libraryArticle.find('a',class_='tel')
-        if phone_element:
-            library_info['phone'] = libraryArticle.find('a',class_='tel').text.strip()
+        phone = self._parse_phone(libraryArticle)
+        if phone:
+            library_info['phone'] = phone
         
         email_element = libraryArticle.find('span',class_='spamspan')
         if email_element:

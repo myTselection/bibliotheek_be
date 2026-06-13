@@ -11,7 +11,8 @@ from homeassistant.const import (
 from .const import (
     DOMAIN,
     NAME,
-    CONF_REFRESH_INTERVAL
+    CONF_REFRESH_INTERVAL,
+    CONF_OPENING_HOURS_LIBRARIES
 )
 
 from .utils import *
@@ -26,6 +27,7 @@ class MyDataUpdateCoordinator(DataUpdateCoordinator):
         self._config = config_entry.data
         self._username = self._config.get(CONF_USERNAME)
         self._password = self._config.get(CONF_PASSWORD)
+        self._opening_hours_libraries = self._config.get(CONF_OPENING_HOURS_LIBRARIES, {})
         self._unique_user_id = f"{self._username}"
         super().__init__(hass, _LOGGER, name = f"{DOMAIN} Coordinator {self._unique_user_id}", update_method=self._async_update_data, update_interval = timedelta(minutes = max(refresh_interval, 1)))
         
@@ -59,11 +61,13 @@ class MyDataUpdateCoordinator(DataUpdateCoordinator):
                 _LOGGER.debug(f"{DOMAIN} update login completed")
                 
                 for user_id, userdetail in self._userdetails.items():
+                    library_slug = extract_libraryname_from_url(userdetail.get('account_details').get('library'))
+                    selected_library = self._opening_hours_libraries.get(library_slug)
                     libraryurl = f"{userdetail.get('account_details').get('library')}/adres-en-openingsuren"
                     libraryName = userdetail.get('account_details').get('libraryName')
                     if not self._librarydetails.get(libraryName):
                         # librarydetails = await self._hass.async_add_executor_job(lambda: self._session.library_details(libraryurl))
-                        librarydetails = await self._session.library_details(libraryurl)
+                        librarydetails = await self._session.library_details(libraryurl, selected_library)
                         # assert librarydetails is not None
                         self._librarydetails[libraryName] = librarydetails
 

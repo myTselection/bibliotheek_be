@@ -14,13 +14,17 @@
                     "username": "Gebruikersnaam",
                     "password": "Wachtwoord"
                 }
+            },
+            "sub_library": {
+                "description": "Kies welke deelbibliotheek gebruikt moet worden voor openingsuren."
             }
         },
         "error": {
             "missing username": "Geef een geldige gebruikersnaam op",
             "missing password": "Geef een geldig wachtwoord op",
             "missing data options handler": "Optiehandler mislukt",
-            "no_valid_settings": "Geen geldige instellingen. Geef gebruikersnaam en wachtwoord op in de HA-configuratie."
+            "no_valid_settings": "Geen geldige instellingen. Geef gebruikersnaam en wachtwoord op in de HA-configuratie.",
+            "cannot_connect": "Kan niet verbinden of aanmelden bij Bibliotheek.be"
         }
     },
     "options": {
