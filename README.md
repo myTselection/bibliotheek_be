@@ -375,7 +375,7 @@ content: >-
   {{state_attr(user,'libraryName') }}:</b></summary> <ul> <li>Kaart
   {{state_attr(user,'barcode') }} ({{state_attr(user,'barcode_spell')| join(',
   ') }}):<br/>
-      <a href="{{state_attr(user,'barcode_url') }}"><img src="{{state_attr(user,'barcode_url') }}" height=100></img></a></li>
+      <img src="{{state_attr(user,'barcode_url') }}" height=100></img></li>
   <li>Account vervalt {{state_attr(user,'expirationDate')}}{% if
   state_attr(user,'isExpired') %} Vervallen{% endif %}{% if
   state_attr(user,'isBlocked') %} Geblokkeerd{% endif %}{% if
@@ -418,7 +418,7 @@ content: >-
   {{state_attr(user,'libraryName') }}:</b></summary> <ul> <li>Kaart
   {{state_attr(user,'barcode') }} ({{state_attr(user,'barcode_spell')| join(',
   ') }}):<br/>
-      <a href="{{state_attr(user,'barcode_url') }}"><img src="{{state_attr(user,'barcode_url') }}" height=100></img></a></li>
+      <img src="{{state_attr(user,'barcode_url') }}" height=100></img></li>
   <li>Account vervalt {{state_attr(user,'expirationDate')}}{% if
   state_attr(user,'isExpired') %} Vervallen{% endif %}{% if
   state_attr(user,'isBlocked') %} Geblokkeerd{% endif %}{% if
