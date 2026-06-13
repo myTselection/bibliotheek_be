@@ -8,6 +8,6 @@
     "integration_type": "hub",
     "iot_class": "cloud_polling",
     "issue_tracker": "https://github.com/myTselection/bibliotheek_be/issues",
-    "requirements": ["bs4", "html5lib","ratelimit"],
-    "version": "3.1.2"
+    "requirements": ["bs4", "html5lib", "python-barcode", "ratelimit"],
+    "version": "3.2.0"
 }
