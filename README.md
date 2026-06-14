@@ -28,6 +28,7 @@ By using the custom services available in this integration, the **lendings can b
 - Restart Home Assistant
 - Add 'Bibliotheek.be' integration via HA Settings > 'Devices and Services' > 'Integrations'
 - Provide Bibliotheek.be username and password
+- For each linked main library, choose the desired sub-library. This selection determines which library location is used for address, contact details, opening hours and closing days.
 
 ## Integration
 

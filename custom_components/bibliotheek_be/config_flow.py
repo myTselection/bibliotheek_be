@@ -4,16 +4,12 @@ from collections import OrderedDict
 
 import voluptuous as vol
 from homeassistant import config_entries
-from homeassistant.core import callback
-from homeassistant.helpers.aiohttp_client import async_get_clientsession
 
 from . import DOMAIN, NAME
-from .utils import (check_settings)
+from .const import CONF_OPENING_HOURS_LIBRARIES
+from .utils import ComponentSession
 from homeassistant.const import (
-    CONF_NAME,
     CONF_PASSWORD,
-    CONF_RESOURCES,
-    CONF_SCAN_INTERVAL,
     CONF_USERNAME
 )
 _LOGGER = logging.getLogger(DOMAIN)
@@ -51,14 +47,105 @@ class ComponentFlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
     def __init__(self):
         """Initialize."""
         self._errors = {}
+        self._user_input = {}
+        self._libraries = {}
+        self._sub_libraries = {}
+        self._library_fields = {}
+
+    async def _async_prepare_sub_libraries(self):
+        """Log in and prepare selectable sub-library options for each main library."""
+        session = ComponentSession(self.hass)
+        user_data = await session.login(
+            self._user_input[CONF_USERNAME], self._user_input[CONF_PASSWORD]
+        )
+        self._libraries = user_data.get("librarydetails", {})
+        self._sub_libraries = {}
+        self._library_fields = {}
+
+        for library_slug in self._libraries:
+            self._sub_libraries[library_slug] = await session.library_autocomplete(
+                library_slug
+            )
+            self._library_fields[library_slug] = library_slug.replace("-", "_")
+
+    def _sub_library_schema(self):
+        """Create a selector schema for the sub-libraries."""
+        data_schema = OrderedDict()
+        for library_slug, sub_libraries in self._sub_libraries.items():
+            field = self._library_fields[library_slug]
+            options = {
+                sub_library["id"]: sub_library["label"]
+                for sub_library in sub_libraries
+                if sub_library.get("id")
+            }
+
+            if not options:
+                options = {library_slug: library_slug.replace("-", " ").title()}
+
+            data_schema[
+                vol.Required(
+                    field,
+                    default=next(iter(options)),
+                    description={"suggested_value": next(iter(options))},
+                )
+            ] = vol.In(options)
+
+        return data_schema
 
     async def async_step_user(self, user_input=None):  # pylint: disable=dangerous-default-value
         """Handle a flow initialized by the user."""
 
         if user_input is not None:
+            self._user_input = user_input
+            self._errors = {}
+            try:
+                await self._async_prepare_sub_libraries()
+            except Exception:  # pylint: disable=broad-except
+                _LOGGER.exception("Failed to prepare Bibliotheek.be sub-library choices")
+                self._errors["base"] = "cannot_connect"
+                return await self._show_config_form(user_input)
+
+            if self._sub_libraries:
+                return await self.async_step_sub_library()
+
             return self.async_create_entry(title=NAME, data=user_input)
 
         return await self._show_config_form(user_input)
+
+    async def async_step_sub_library(self, user_input=None):
+        """Ask which sub-library should be used for opening hours."""
+        if user_input is not None:
+            selected_libraries = {}
+
+            for library_slug, sub_libraries in self._sub_libraries.items():
+                selected_id = user_input.get(self._library_fields[library_slug])
+                selected = next(
+                    (
+                        sub_library
+                        for sub_library in sub_libraries
+                        if sub_library.get("id") == selected_id
+                    ),
+                    None,
+                )
+                if selected is None:
+                    selected = {
+                        "id": selected_id,
+                        "label": library_slug.replace("-", " ").title(),
+                    }
+
+                selected_libraries[library_slug] = selected
+                selected_libraries[library_slug]["main_library"] = library_slug
+                selected_libraries[library_slug]["url"] = self._libraries.get(library_slug)
+
+            data = dict(self._user_input)
+            data[CONF_OPENING_HOURS_LIBRARIES] = selected_libraries
+            return self.async_create_entry(title=NAME, data=data)
+
+        return self.async_show_form(
+            step_id="sub_library",
+            data_schema=vol.Schema(self._sub_library_schema()),
+            errors=self._errors,
+        )
 
     async def _show_config_form(self, user_input):
         """Show the configuration form to edit location data."""

@@ -14,6 +14,9 @@
                     "username": "Utilizador",
                     "password": "Palavra-Passe"
                 }
+            },
+            "sub_library": {
+                "description": "Escolha a sub-biblioteca a utilizar para o horário de funcionamento."
             }
 
         },
@@ -21,7 +24,8 @@
             "missing username": "Utilizador invalido",
             "missing password": "Palavra-Passe invalida",
             "missing data options handler": "Falha nas opcções",
-            "no_valid_settings": "Sem configurações.... inserir utilizador e palavra passe na configuração."
+            "no_valid_settings": "Sem configurações.... inserir utilizador e palavra passe na configuração.",
+            "cannot_connect": "Não foi possível ligar ou iniciar sessão no Bibliotheek.be"
         }
     },
     "options": {

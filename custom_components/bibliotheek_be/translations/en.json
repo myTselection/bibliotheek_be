@@ -14,6 +14,9 @@
                     "username": "Username",
                     "password": "Password"
                 }
+            },
+            "sub_library": {
+                "description": "Choose which sub-library should be used for opening hours."
             }
 
         },
@@ -21,7 +24,8 @@
             "missing username": "Please provide a valid username",
             "missing password": "Please provide a valid password",
             "missing data options handler": "Option handler failed",
-            "no_valid_settings": "No valid settings, provide username, password in ha config."
+            "no_valid_settings": "No valid settings, provide username, password in ha config.",
+            "cannot_connect": "Could not connect or log in to Bibliotheek.be"
         }
     },
     "options": {
