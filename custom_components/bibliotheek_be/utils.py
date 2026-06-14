@@ -139,12 +139,17 @@ class ComponentSession(object):
             self._ensure_status("credential login", response, {200, 302, 303})
             login_location = response.headers.get('location')
             if login_location is None:
-                self._raise_unexpected_response("credential login redirect", response, {200, 302, 303})
-            login_locationurl_parsed = urlsplit(login_location)
-            login_query_params = parse_qs(login_locationurl_parsed.query)
-            oauth_verifier = login_query_params.get('oauth_verifier', [None])[0]
-            oauth_token = query_params.get('oauth_token', [None])[0]
-            _LOGGER.debug(f"bibliotheek.be url params parsed: login_location: {login_location}, oauth_token: {oauth_token}, oauth_verifier: {oauth_verifier}")
+                _LOGGER.debug(
+                    "bibliotheek.be credential login returned %s without a redirect; "
+                    "continuing to membership verification",
+                    response.status_code,
+                )
+            else:
+                login_locationurl_parsed = urlsplit(login_location)
+                login_query_params = parse_qs(login_locationurl_parsed.query)
+                oauth_verifier = login_query_params.get('oauth_verifier', [None])[0]
+                oauth_token = query_params.get('oauth_token', [None])[0]
+                _LOGGER.debug(f"bibliotheek.be url params parsed: login_location: {login_location}, oauth_token: {oauth_token}, oauth_verifier: {oauth_verifier}")
             #example login_location: https://bibliotheek.be/my-library/login/callback?oauth_token=***************&oauth_verifier=*********&uilang=nl
             
             if login_location is not None:
